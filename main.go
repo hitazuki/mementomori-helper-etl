@@ -1,21 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func main() {
-	// 检查命令行参数
-	if len(os.Args) < 2 {
-		fmt.Println("用法: diamond_tracker <日志文件路径>")
+	// 命令行参数
+	outputDir := flag.String("output", "./data", "输出目录路径")
+	flag.Parse()
+
+	// 检查日志文件参数
+	args := flag.Args()
+	if len(args) < 1 {
+		fmt.Println("用法: mmth_etl [-output <输出目录>] <日志文件路径>")
 		os.Exit(1)
 	}
-	inputLogPath := os.Args[1]
+	inputLogPath := args[0]
 
 	// 配置
-	outputJSONPath := "./data/diamond_stats.json"
-	stateFilePath := "./data/mmth_etl_state.json"
+	outputJSONPath := filepath.Join(*outputDir, "diamond_stats.json")
+	stateFilePath := filepath.Join(*outputDir, "mmth_etl_state.json")
 
 	processor := &LogProcessor{
 		outputJSONPath: outputJSONPath,
