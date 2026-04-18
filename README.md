@@ -102,6 +102,7 @@ mmth_etl/
 ```
 
 输出文件：
+
 - `<output>/diamond_stats.json` - 统计结果
 - `<output>/mmth_etl_state.json` - 检查点文件
 
