@@ -7,6 +7,7 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 目前支持的功能：
 
 - **钻石记录处理**：跟踪游戏中钻石的获取和消耗情况，为每个角色提供每日、每周、每月和总计的统计信息
+- **时空洞窟追踪**：识别洞窟任务执行状态（已执行/已完成/异常），按角色和日期统计
 
 ## 功能特点
 
@@ -14,7 +15,8 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 - **智能增量处理**：基于时间戳的二分查找定位，只处理新增日志，避免重复处理
 - **多维度统计**：计算每日、每周、每月和总计的钻石统计信息
 - **来源追踪**：按来源统计钻石获取和消耗情况（自动排除物品变动、挑战记录、错误日志）
-- **角色隔离**：每个角色的钻石来源独立追踪
+- **时空洞窟追踪**：识别洞窟日志关键字，统计每日洞窟任务执行状态
+- **角色隔离**：每个角色的钻石来源和洞窟状态独立追踪
 - **内存优化**：可选保留详细记录（默认关闭以节省内存），流式处理不缓存完整数据集
 - **自动目录创建**：输出目录不存在时自动创建
 
@@ -24,9 +26,10 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 
 1. **数据解析** - `log_parser.go` 处理日志解析、二分查找定位、流式读取
 2. **统计分析** - `aggregator.go` 执行每日、每周、每月和总计的聚合计算
-3. **检查点管理** - `checkpoint.go` 管理断点状态（上次处理时间戳）
-4. **类型定义** - `types.go` 定义数据结构和正则表达式模式
-5. **主协调** - `main.go` 协调整合处理管道，支持可配置输出目录
+3. **洞窟统计** - `cave_aggregator.go` 处理时空洞窟状态统计
+4. **检查点管理** - `checkpoint.go` 管理断点状态（上次处理时间戳）
+5. **类型定义** - `types.go` 定义数据结构和正则表达式模式
+6. **主协调** - `main.go` 协调整合处理管道，支持可配置输出目录
 
 ## 使用方法
 
@@ -71,20 +74,22 @@ go test ./log_parser_test.go -v
 
 ```text
 mmth_etl/
-├── main.go          # 主程序入口，接收命令行参数，协调处理流程
-├── types.go         # 数据结构和正则表达式模式定义
-├── log_parser.go    # 日志解析、二分查找定位、流式读取
-├── aggregator.go    # 统计聚合计算（日/周/月/总计）
-├── checkpoint.go    # 断点状态管理
-├── CLAUDE.md        # Claude Code 开发指南
-├── README.md        # 项目文档
-├── go.mod           # Go 模块定义
-├── logs/            # 测试日志文件目录
-│   └── test*.log    # 测试用日志文件
-├── data/            # 输出数据目录
-│   ├── diamond_stats.json          # 统计结果输出
+├── main.go             # 主程序入口，接收命令行参数，协调处理流程
+├── types.go            # 数据结构和正则表达式模式定义
+├── log_parser.go       # 日志解析、二分查找定位、流式读取
+├── aggregator.go       # 钻石统计聚合计算（日/周/月/总计）
+├── cave_aggregator.go  # 时空洞窟状态统计
+├── checkpoint.go       # 断点状态管理
+├── CLAUDE.md           # Claude Code 开发指南
+├── README.md           # 项目文档
+├── go.mod              # Go 模块定义
+├── logs/               # 测试日志文件目录
+│   └── test*.log       # 测试用日志文件
+├── data/               # 输出数据目录
+│   ├── diamond_stats.json          # 钻石统计结果
+│   ├── cave_stats.json             # 洞窟统计结果
 │   └── mmth_etl_state.json         # 检查点文件
-└── scripts/         # 工具脚本目录
+└── scripts/            # 工具脚本目录
     └── extract_by_date.py          # 按日期提取日志的脚本
 ```
 
@@ -102,7 +107,8 @@ mmth_etl/
 
 输出文件：
 
-- `<output>/diamond_stats.json` - 统计结果
+- `<output>/diamond_stats.json` - 钻石统计结果
+- `<output>/cave_stats.json` - 时空洞窟统计结果
 - `<output>/mmth_etl_state.json` - 检查点文件
 
 ## 命名约定
@@ -159,6 +165,16 @@ mmth_etl/
 | `OnError` | 错误日志，不作为钻石来源 |
 | `Diamonds(None) × N` | 钻石获取记录 |
 | `Diamonds(None) × -N` | 钻石消耗记录 |
+
+### 时空洞窟日志识别
+
+| 日志关键字 | 状态 |
+| --- | --- |
+| `Enter Cave of Space-Time` | 已执行 (started) |
+| `Cave of Space-Time Finished` | 已完成 (finished) |
+| `KeyNotFoundException` | 异常 (error) |
+
+每日状态优先级：异常 > 已完成 > 未完成
 
 ### 来源追踪规则
 
@@ -223,6 +239,31 @@ mmth_etl/
 ```
 
 **注意**：`records` 字段仅在启用 `keepRecords` 模式时出现（默认关闭以节省内存）。
+
+### 时空洞窟统计格式
+
+处理完成后，洞窟统计结果保存到 `cave_stats.json`，格式如下：
+
+```json
+{
+  "角色名": {
+    "2026-04-20": {
+      "date": "2026-04-20",
+      "records": [
+        {"character": "角色名", "timestamp": "2026-04-20 10:30:00", "status": "started"},
+        {"character": "角色名", "timestamp": "2026-04-20 10:45:00", "status": "finished"}
+      ],
+      "status": "finished"
+    }
+  }
+}
+```
+
+**状态说明**：
+
+- `started` - 已执行但未完成
+- `finished` - 已完成
+- `error` - 异常
 
 ## 增量处理机制
 

@@ -177,6 +177,49 @@ func parseDiamondLine(parsed ParsedLog, lastSource string) *DiamondRecord {
 	return nil
 }
 
+// parseCaveLine 从已解析的日志中提取洞穴记录
+func parseCaveLine(parsed ParsedLog) *CaveRecord {
+	if !parsed.IsValid {
+		return nil
+	}
+
+	body := parsed.Body
+	date := parsed.Timestamp[:10]
+
+	// 检查三种状态（优先级：error > finished > started）
+	if caveErrorRegex.MatchString(body) {
+		return &CaveRecord{
+			Character:   parsed.Character,
+			Timestamp:   parsed.Timestamp,
+			PreciseTime: parsed.PreciseTime,
+			Status:      CaveStatusError,
+			Date:        date,
+		}
+	}
+
+	if caveFinishRegex.MatchString(body) {
+		return &CaveRecord{
+			Character:   parsed.Character,
+			Timestamp:   parsed.Timestamp,
+			PreciseTime: parsed.PreciseTime,
+			Status:      CaveStatusFinished,
+			Date:        date,
+		}
+	}
+
+	if caveEnterRegex.MatchString(body) {
+		return &CaveRecord{
+			Character:   parsed.Character,
+			Timestamp:   parsed.Timestamp,
+			PreciseTime: parsed.PreciseTime,
+			Status:      CaveStatusStarted,
+			Date:        date,
+		}
+	}
+
+	return nil
+}
+
 // readTimestampAt 读取指定偏移处的日志时间戳（精确时间，用于二分查找）
 func readTimestampAt(file *os.File, offset int64) (string, error) {
 	_, err := file.Seek(offset, 0)
@@ -317,7 +360,7 @@ func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
 
 // processStream 流式处理日志（内存友好，适合 GB 级文件）
 // 直接将记录添加到聚合器，不缓存所有记录
-func (p *LogProcessor) processStream(agg *Aggregator) string {
+func (p *LogProcessor) processStream(agg *Aggregator, caveAgg *CaveAggregator) string {
 	// 打开日志文件
 	file, err := os.Open(p.inputLogPath)
 	if err != nil {
@@ -391,6 +434,12 @@ func (p *LogProcessor) processStream(agg *Aggregator) string {
 			} else {
 				lastLogTime = record.Timestamp
 			}
+		}
+
+		// 提取洞穴记录
+		caveRecord := parseCaveLine(parsed)
+		if caveRecord != nil {
+			caveAgg.AddRecord(*caveRecord)
 		}
 		// line、parsed 在此作用域结束后可被 GC 回收
 	}

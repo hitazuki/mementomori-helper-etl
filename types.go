@@ -4,6 +4,31 @@ import (
 	"regexp"
 )
 
+// CaveStatus 洞穴状态
+type CaveStatus string
+
+const (
+	CaveStatusStarted  CaveStatus = "started"  // 已执行
+	CaveStatusFinished CaveStatus = "finished" // 已完成
+	CaveStatusError    CaveStatus = "error"    // 异常
+)
+
+// CaveRecord 洞穴记录
+type CaveRecord struct {
+	Character   string     `json:"character"`
+	Timestamp   string     `json:"timestamp"`
+	PreciseTime string     `json:"-"`
+	Status      CaveStatus `json:"status"`
+	Date        string     `json:"-"` // 内部使用，不输出到 JSON
+}
+
+// CaveDailyStats 每日洞穴统计
+type CaveDailyStats struct {
+	Date    string       `json:"date"`
+	Records []CaveRecord `json:"records,omitempty"`
+	Status  CaveStatus   `json:"status"`
+}
+
 // DiamondRecord 表示钻石记录
 type DiamondRecord struct {
 	Character   string `json:"character"` // 角色名
@@ -73,4 +98,7 @@ type LogProcessor struct {
 var (
 	diamondGainRegex    = regexp.MustCompile(`Diamonds\(None\) × (\d+)`)
 	diamondConsumeRegex = regexp.MustCompile(`Diamonds\(None\) × -(\d+)`)
+	caveEnterRegex      = regexp.MustCompile(`Enter Cave of Space-Time`)
+	caveFinishRegex     = regexp.MustCompile(`Cave of Space-Time Finished`)
+	caveErrorRegex      = regexp.MustCompile(`KeyNotFoundException`)
 )
