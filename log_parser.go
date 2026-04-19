@@ -14,11 +14,12 @@ import (
 
 // ParsedLog 表示解析后的日志结构
 type ParsedLog struct {
-	RawLine   string // 原始行内容
-	Timestamp string // 时间戳
-	Character string // 角色名
-	Body      string // 日志主体
-	IsValid   bool   // 格式是否有效
+	RawLine      string // 原始行内容
+	Timestamp    string // 时间戳（日志内容中的，秒级精度）
+	PreciseTime  string // 精确时间（JSON time字段，纳秒级精度，用于检查点）
+	Character    string // 角色名
+	Body         string // 日志主体
+	IsValid      bool   // 格式是否有效
 }
 
 // parseLogLine 解析单行日志，提取通用信息
@@ -36,6 +37,7 @@ func parseLogLine(line string) ParsedLog {
 	}
 
 	logContent := logEntry.Log
+	result.PreciseTime = logEntry.Time // 保存精确时间用于检查点
 
 	// 验证并提取 "[时间] [名字] 日志主体" 格式
 	timestamp, character, body := extractLogComponents(logContent)
@@ -150,11 +152,12 @@ func parseDiamondLine(parsed ParsedLog, lastSource string) *DiamondRecord {
 	if matches := diamondGainRegex.FindStringSubmatch(body); len(matches) > 1 {
 		amount, _ := strconv.Atoi(matches[1])
 		return &DiamondRecord{
-			Character: parsed.Character,
-			Timestamp: parsed.Timestamp,
-			Amount:    amount,
-			Type:      "gain",
-			Source:    lastSource,
+			Character:   parsed.Character,
+			Timestamp:   parsed.Timestamp,
+			PreciseTime: parsed.PreciseTime,
+			Amount:      amount,
+			Type:        "gain",
+			Source:      lastSource,
 		}
 	}
 
@@ -162,19 +165,19 @@ func parseDiamondLine(parsed ParsedLog, lastSource string) *DiamondRecord {
 	if matches := diamondConsumeRegex.FindStringSubmatch(body); len(matches) > 1 {
 		amount, _ := strconv.Atoi(matches[1])
 		return &DiamondRecord{
-			Character: parsed.Character,
-			Timestamp: parsed.Timestamp,
-			Amount:    amount,
-			Type:      "consume",
-			Source:    lastSource,
+			Character:   parsed.Character,
+			Timestamp:   parsed.Timestamp,
+			PreciseTime: parsed.PreciseTime,
+			Amount:      amount,
+			Type:        "consume",
+			Source:      lastSource,
 		}
 	}
 
 	return nil
 }
 
-// readTimestampAt 读取指定偏移处的日志时间戳
-// 从日志内容中提取时间，格式与 parseLogLine 一致（本地时间格式）
+// readTimestampAt 读取指定偏移处的日志时间戳（精确时间，用于二分查找）
 func readTimestampAt(file *os.File, offset int64) (string, error) {
 	_, err := file.Seek(offset, 0)
 	if err != nil {
@@ -192,22 +195,19 @@ func readTimestampAt(file *os.File, offset int64) (string, error) {
 		return "", fmt.Errorf("空行")
 	}
 
-	// 从日志内容中提取时间，与 parseLogLine 保持一致
+	// 从JSON中提取精确时间
 	var logEntry struct {
-		Log string `json:"log"`
+		Time string `json:"time"`
 	}
 	if err := json.Unmarshal([]byte(line), &logEntry); err != nil {
 		return "", err
 	}
 
-	// 提取 [YYYY-MM-DD HH:MM:SS] 格式的时间
-	timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
-	matches := timeRegex.FindStringSubmatch(logEntry.Log)
-	if len(matches) < 2 {
+	if logEntry.Time == "" {
 		return "", fmt.Errorf("无法提取时间戳")
 	}
 
-	return matches[1], nil
+	return logEntry.Time, nil
 }
 
 // findLineStart 向前查找最近的换行符，返回下一行的起始位置
@@ -365,7 +365,8 @@ func (p *LogProcessor) processStream(agg *Aggregator) string {
 		}
 
 		// 时间戳二次校验（防止定位偏差或时间乱序）
-		if p.checkpoint != "" && parsed.Timestamp <= p.checkpoint {
+		// 使用精确时间进行比较，避免秒级时间戳重复导致遗漏
+		if p.checkpoint != "" && parsed.PreciseTime != "" && parsed.PreciseTime <= p.checkpoint {
 			continue
 		}
 
@@ -374,13 +375,22 @@ func (p *LogProcessor) processStream(agg *Aggregator) string {
 			lastSourceByCharacter[parsed.Character] = parsed.Body
 		}
 
-		// 提取钻石记录
-		record := parseDiamondLine(parsed, lastSourceByCharacter[parsed.Character])
+		// 提取钻石记录，来源为空时使用 "none"
+		source := lastSourceByCharacter[parsed.Character]
+		if source == "" {
+			source = "none"
+		}
+		record := parseDiamondLine(parsed, source)
 		if record != nil {
 			// 立即添加到聚合器，record 在此作用域结束后可被 GC 回收
 			agg.AddRecord(*record)
 			newRecordCount++
-			lastLogTime = record.Timestamp
+			// 使用精确时间作为检查点
+			if record.PreciseTime != "" {
+				lastLogTime = record.PreciseTime
+			} else {
+				lastLogTime = record.Timestamp
+			}
 		}
 		// line、parsed 在此作用域结束后可被 GC 回收
 	}

@@ -73,9 +73,17 @@ def extract_by_date(source_file: str, start_time: datetime, end_time: datetime):
 
                 # 解析 UTC 时间并转换为东8区
                 try:
-                    # 处理带 Z 后缀的 UTC 时间
+                    # 处理带 Z 后缀的 UTC 时间（支持纳秒格式）
                     if time_str.endswith('Z'):
-                        utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                        # 截断纳秒到微秒（6位）
+                        if '.' in time_str:
+                            base, frac = time_str.rsplit('.', 1)
+                            frac = frac.rstrip('Z')[:6]  # 只取前6位
+                            time_str = f"{base}.{frac}Z"
+                        try:
+                            utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=timezone.utc)
+                        except ValueError:
+                            utc_time = datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                     else:
                         utc_time = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
 

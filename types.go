@@ -6,11 +6,12 @@ import (
 
 // DiamondRecord 表示钻石记录
 type DiamondRecord struct {
-	Character string `json:"character"` // 角色名
-	Timestamp string `json:"timestamp"`
-	Amount    int    `json:"amount"`
-	Type      string `json:"type"`             // "gain" 或 "consume"
-	Source    string `json:"source,omitempty"` // 钻石来源（模糊匹配）
+	Character   string `json:"character"` // 角色名
+	Timestamp   string `json:"timestamp"` // 显示用时间（秒级精度）
+	PreciseTime string `json:"-"`         // 检查点用精确时间（纳秒级精度，不序列化）
+	Amount      int    `json:"amount"`
+	Type        string `json:"type"`             // "gain" 或 "consume"
+	Source      string `json:"source,omitempty"` // 钻石来源（模糊匹配）
 }
 
 // SourceStats 按来源的统计
