@@ -9,6 +9,7 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 - **钻石记录处理**：跟踪游戏中钻石的获取和消耗情况，为每个角色提供每日、每周、每月和总计的统计信息
 - **时空洞窟追踪**：识别洞窟任务执行状态（已执行/已完成/异常），按角色和日期统计
 - **战斗日志统计**：识别主线关卡和各种塔的挑战记录，统计尝试次数、通关状态和最后挑战时间
+- **物品日志统计**：跟踪饼干(Rune Ticket)和红水(Upgrade Panacea)的获取/消耗情况，支持来源追踪
 
 ## 功能特点
 
@@ -18,6 +19,7 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 - **来源追踪**：按来源统计钻石获取和消耗情况（自动排除物品变动、挑战记录、错误日志）
 - **时空洞窟追踪**：识别洞窟日志关键字，统计每日洞窟任务执行状态
 - **战斗日志统计**：识别主线关卡和塔挑战记录，支持5种塔类型
+- **物品日志统计**：跟踪饼干和红水的获取/消耗，支持来源映射（Gacha/Open日志简化显示）
 - **角色隔离**：每个角色的钻石来源和洞窟状态独立追踪
 - **内存优化**：可选保留详细记录（默认关闭以节省内存），流式处理不缓存完整数据集
 - **自动目录创建**：输出目录不存在时自动创建
@@ -27,13 +29,14 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 
 应用程序遵循清晰的分离关注点架构：
 
-1. **数据解析** - `log_parser.go` 处理日志解析、二分查找定位、流式读取、日志类型识别
+1. **数据解析** - `log_parser.go` 处理日志解析、二分查找定位、流式读取、日志类型识别、来源映射
 2. **钻石统计** - `aggregator.go` 执行每日、每周、每月和总计的聚合计算
 3. **洞窟统计** - `cave_aggregator.go` 处理时空洞窟状态统计
 4. **战斗统计** - `challenge_aggregator.go` 处理主线关卡和塔挑战统计
-5. **检查点管理** - `checkpoint.go` 管理断点状态（上次处理时间戳）
-6. **类型定义** - `types.go` 定义数据结构和正则表达式模式
-7. **主协调** - `main.go` 协调整合处理管道，支持可配置输出目录
+5. **物品统计** - `item_aggregator.go` 通用物品聚合器，`rune_ticket_aggregator.go` 和 `upgrade_panacea_aggregator.go` 处理饼干和红水统计
+6. **检查点管理** - `checkpoint.go` 管理断点状态（上次处理时间戳）
+7. **类型定义** - `types.go` 定义数据结构和正则表达式模式
+8. **主协调** - `main.go` 协调整合处理管道，支持可配置输出目录
 
 ## 使用方法
 
@@ -78,25 +81,30 @@ go test ./log_parser_test.go -v
 
 ```text
 mmth_etl/
-├── main.go                  # 主程序入口，接收命令行参数，协调处理流程
-├── types.go                 # 数据结构和正则表达式模式定义
-├── log_parser.go            # 日志解析、二分查找定位、流式读取
-├── aggregator.go            # 钻石统计聚合计算（日/周/月/总计）
-├── cave_aggregator.go       # 时空洞窟状态统计
-├── challenge_aggregator.go  # 战斗日志统计
-├── checkpoint.go            # 断点状态管理
-├── CLAUDE.md                # Claude Code 开发指南
-├── README.md                # 项目文档
-├── go.mod                   # Go 模块定义
-├── logs/                    # 测试日志文件目录
-│   └── test*.log            # 测试用日志文件
-├── data/                    # 输出数据目录
-│   ├── diamond_stats.json   # 钻石统计结果
-│   ├── cave_stats.json      # 洞窟统计结果
-│   ├── challenge_stats.json # 战斗日志统计结果
-│   └── mmth_etl_state.json  # 检查点文件
-└── scripts/                 # 工具脚本目录
-    └── extract_by_date.py   # 按日期提取日志的脚本
+├── main.go                      # 主程序入口，接收命令行参数，协调处理流程
+├── types.go                     # 数据结构和正则表达式模式定义
+├── log_parser.go                # 日志解析、二分查找定位、流式读取
+├── aggregator.go                # 钻石统计聚合计算（日/周/月/总计）
+├── cave_aggregator.go           # 时空洞窟状态统计
+├── challenge_aggregator.go      # 战斗日志统计
+├── item_aggregator.go           # 物品统计通用聚合器
+├── rune_ticket_aggregator.go    # 饼干统计聚合器
+├── upgrade_panacea_aggregator.go # 红水统计聚合器
+├── checkpoint.go                # 断点状态管理
+├── CLAUDE.md                    # Claude Code 开发指南
+├── README.md                    # 项目文档
+├── go.mod                       # Go 模块定义
+├── logs/                        # 测试日志文件目录
+│   └── test*.log                # 测试用日志文件
+├── data/                        # 输出数据目录
+│   ├── diamond_stats.json       # 钻石统计结果
+│   ├── cave_stats.json          # 洞窟统计结果
+│   ├── challenge_stats.json     # 战斗日志统计结果
+│   ├── rune_ticket_stats.json   # 饼干统计结果
+│   ├── upgrade_panacea_stats.json # 红水统计结果
+│   └── mmth_etl_state.json      # 检查点文件
+└── scripts/                     # 工具脚本目录
+    └── extract_by_date.py       # 按日期提取日志的脚本
 ```
 
 ## 配置
@@ -116,6 +124,8 @@ mmth_etl/
 - `<output>/diamond_stats.json` - 钻石统计结果
 - `<output>/cave_stats.json` - 时空洞窟统计结果
 - `<output>/challenge_stats.json` - 战斗日志统计结果
+- `<output>/rune_ticket_stats.json` - 饼干统计结果
+- `<output>/upgrade_panacea_stats.json` - 红水统计结果
 - `<output>/mmth_etl_state.json` - 检查点文件
 
 ## 命名约定
@@ -204,6 +214,29 @@ mmth_etl/
 - 尝试次数（attempts）
 - 是否通关（success）
 - 最后挑战时间（last_time）
+
+### 物品日志识别
+
+| 日志格式 | 物品类型 | 示例 |
+| --- | --- | --- |
+| `Name: Rune Ticket(Quality) × N` | 饼干 | `Name: Rune Ticket(SR) × 17` |
+| `Name: Upgrade Panacea(Quality) × N` | 红水 | `Name: Upgrade Panacea(SR) × 38` |
+
+**数量识别**：正数表示获取，负数表示消耗
+
+### 来源映射规则
+
+物品和钻石来源取自同一角色的最近非物品变动日志，并应用以下映射规则：
+
+| 原始日志 | 映射结果 | 说明 |
+| --- | --- | --- |
+| `You have triumphed.` | `temple of illusions` | 幻想神殿通关 |
+| `Gacha ... N times, ...` | `Gacha ...` | 抽卡日志简化，去掉次数和消耗 |
+| `Open ... x N` | `Open ...` | 开箱日志简化，去掉数量 |
+
+**示例**：
+- `Gacha 黒葬武具ガチャ 5 times, used Gold×250000` → `Gacha 黒葬武具ガチャ`
+- `Open Silver Sealed Chest x 2` → `Open Silver Sealed Chest`
 
 ### 来源追踪规则
 
@@ -340,6 +373,63 @@ mmth_etl/
 - `attempts` - 尝试次数
 - `success` - 是否已通关
 - `last_time` - 最后挑战时间
+
+### 物品统计格式
+
+处理完成后，物品统计结果保存到 `rune_ticket_stats.json` 和 `upgrade_panacea_stats.json`，格式如下：
+
+```json
+{
+  "角色名": {
+    "daily": {
+      "2026-04-20": {
+        "date": "2026-04-20",
+        "gain": 17,
+        "consume": 0,
+        "net_change": 17,
+        "sources": {
+          "temple of illusions": {"gain": 17, "consume": 0},
+          "Gacha 黒葬武具ガチャ": {"gain": 0, "consume": 5}
+        }
+      }
+    },
+    "weekly": {
+      "2026-W16": {
+        "week": "2026-W16",
+        "gain": 100,
+        "consume": 20,
+        "net_change": 80,
+        "sources": {}
+      }
+    },
+    "monthly": {
+      "2026-04": {
+        "month": "2026-04",
+        "gain": 200,
+        "consume": 50,
+        "net_change": 150,
+        "sources": {}
+      }
+    },
+    "total": {
+      "gain": 500,
+      "consume": 100,
+      "net_change": 400,
+      "sources": {
+        "temple of illusions": {"gain": 300, "consume": 0},
+        "Gacha 黒葬武具ガチャ": {"gain": 0, "consume": 80}
+      }
+    }
+  }
+}
+```
+
+**字段说明**：
+
+- `gain` - 获取数量
+- `consume` - 消耗数量
+- `net_change` - 净变化（获取 - 消耗）
+- `sources` - 按来源分组的统计（仅在 daily 和 total 中记录）
 
 ## 增量处理机制
 
