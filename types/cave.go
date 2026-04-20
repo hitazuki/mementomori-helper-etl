@@ -13,7 +13,6 @@ const (
 type CaveRecord struct {
 	Character   string     `json:"character"`
 	Timestamp   string     `json:"timestamp"`
-	PreciseTime string     `json:"-"`
 	Status      CaveStatus `json:"status"`
 	Date        string     `json:"-"` // 内部使用，不输出到 JSON
 }

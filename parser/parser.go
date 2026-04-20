@@ -8,35 +8,37 @@ import (
 
 // ParsedLog 表示解析后的日志结构
 type ParsedLog struct {
-	RawLine     string // 原始行内容
-	Timestamp   string // 时间戳（日志内容中的，秒级精度）
-	PreciseTime string // 精确时间（JSON time字段，纳秒级精度，用于检查点）
-	Character   string // 角色名
-	Body        string // 日志主体
-	IsValid     bool   // 格式是否有效
+	RawLine   string // 原始行内容
+	Timestamp string // 时间戳（秒级精度，ISO格式）
+	Character string // 角色名
+	Body      string // 日志主体
+	IsValid   bool   // 格式是否有效
 }
 
 // ParseLogLine 解析单行日志，提取通用信息
+// 支持两种格式：
+//  1. Docker JSON 格式: {"log":"...", "time":"..."}
+//  2. 纯文本格式: [时间戳] [角色] 内容
+// 统一使用秒级精度时间戳（ISO格式，东8区）
 func ParseLogLine(line string) ParsedLog {
 	result := ParsedLog{RawLine: line}
 
+	// 确定日志内容来源
+	logContent := line
 	var logEntry struct {
-		Log  string `json:"log"`
-		Time string `json:"time"`
+		Log string `json:"log"`
 	}
-	if err := json.Unmarshal([]byte(line), &logEntry); err != nil {
-		return result
+	if err := json.Unmarshal([]byte(line), &logEntry); err == nil && logEntry.Log != "" {
+		logContent = logEntry.Log
 	}
 
-	logContent := logEntry.Log
-	result.PreciseTime = logEntry.Time
-
+	// 提取通用字段
 	timestamp, character, body := extractLogComponents(logContent)
 	if timestamp == "" {
 		return result
 	}
 
-	result.Timestamp = timestamp
+	result.Timestamp = strings.Replace(timestamp, " ", "T", 1) + "+08:00"
 	result.Character = character
 	result.Body = body
 	result.IsValid = true

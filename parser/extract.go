@@ -35,7 +35,6 @@ func ExtractChangeRecord(parsed ParsedLog, source string, logType LogType) *type
 	return &types.ChangeRecord{
 		Character:   parsed.Character,
 		Timestamp:   parsed.Timestamp,
-		PreciseTime: parsed.PreciseTime,
 		Amount:      amount,
 		Source:      mappedSource,
 	}
@@ -60,7 +59,6 @@ func ExtractCaveRecord(parsed ParsedLog) *types.CaveRecord {
 		return &types.CaveRecord{
 			Character:   parsed.Character,
 			Timestamp:   parsed.Timestamp,
-			PreciseTime: parsed.PreciseTime,
 			Status:      types.CaveStatusError,
 			Date:        date,
 		}
@@ -70,7 +68,6 @@ func ExtractCaveRecord(parsed ParsedLog) *types.CaveRecord {
 		return &types.CaveRecord{
 			Character:   parsed.Character,
 			Timestamp:   parsed.Timestamp,
-			PreciseTime: parsed.PreciseTime,
 			Status:      types.CaveStatusFinished,
 			Date:        date,
 		}
@@ -80,7 +77,6 @@ func ExtractCaveRecord(parsed ParsedLog) *types.CaveRecord {
 		return &types.CaveRecord{
 			Character:   parsed.Character,
 			Timestamp:   parsed.Timestamp,
-			PreciseTime: parsed.PreciseTime,
 			Status:      types.CaveStatusStarted,
 			Date:        date,
 		}
@@ -96,7 +92,6 @@ func ExtractChallengeRecord(parsed ParsedLog) *types.ChallengeRecord {
 	record := &types.ChallengeRecord{
 		Character:   parsed.Character,
 		Timestamp:   parsed.Timestamp,
-		PreciseTime: parsed.PreciseTime,
 	}
 
 	if types.ChallengeSuccessRegex.MatchString(body) {

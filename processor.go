@@ -11,6 +11,7 @@ import (
 	"mmth-etl/storage"
 	"mmth-etl/types"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -78,10 +79,13 @@ func (p *LogProcessor) Process(
 			continue
 		}
 
-		// 时间戳二次校验
-		if p.checkpoint != "" && parsed.PreciseTime != "" && parsed.PreciseTime <= p.checkpoint {
-			continue
-		}
+		// 时间戳二次校验：跳过已处理的记录
+			// 使用 <= 跳过同秒记录，确保不重复计入
+			if p.checkpoint != "" && parsed.Timestamp != "" {
+				if parsed.Timestamp <= p.checkpoint {
+					continue
+				}
+			}
 
 		// 更新来源上下文
 		if parser.IsValidSource(parsed.Body) {
@@ -100,11 +104,7 @@ func (p *LogProcessor) Process(
 			if record != nil {
 				diamondAgg.AddRecord(*record)
 				newRecordCount++
-				if record.PreciseTime != "" {
-					lastLogTime = record.PreciseTime
-				} else {
-					lastLogTime = record.Timestamp
-				}
+				lastLogTime = record.Timestamp
 			}
 
 		case parser.LogTypeCave:
@@ -165,13 +165,12 @@ func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
 		return 0, nil
 	}
 
-	// 快速边界检查
-	endPos := fileSize - 4096
-	if endPos < 0 {
-		endPos = 0
-	}
-	endPos = findLineStart(file, endPos)
-	lastTimeInFile, err := readTimestampAt(file, endPos)
+	// 快速边界检查：读取文件末尾的时间戳
+	// 找到最后一个完整行的起始位置
+	lastLineStart := findLastLineStart(file, fileSize)
+	lastTimeInFile, err := readTimestampAt(file, lastLineStart)
+
+	// 文件最后时间 <= checkpoint 表示全部已处理
 	if err == nil && lastTimeInFile <= lastLogTime {
 		return -1, nil
 	}
@@ -181,7 +180,7 @@ func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
 		return 0, nil
 	}
 
-	// 二分查找
+	// 二分查找：找第一个 > checkpoint 的记录
 	left, right := int64(0), fileSize
 	var result int64 = fileSize
 
@@ -243,7 +242,45 @@ func findLineStart(file *os.File, pos int64) int64 {
 	return 0
 }
 
+// findLastLineStart 找到文件中最后一个完整行的起始位置
+func findLastLineStart(file *os.File, fileSize int64) int64 {
+	if fileSize <= 1 {
+		return 0
+	}
+
+	// 从文件末尾向前查找，跳过可能的末尾换行符
+	buf := make([]byte, 1)
+	pos := fileSize - 1
+
+	// 跳过末尾的换行符
+	for pos >= 0 {
+		file.Seek(pos, 0)
+		file.Read(buf)
+		if buf[0] != '\n' && buf[0] != '\r' {
+			break
+		}
+		pos--
+	}
+
+	if pos < 0 {
+		return 0
+	}
+
+	// 从当前位置向前找上一个换行符
+	for pos >= 0 {
+		file.Seek(pos, 0)
+		file.Read(buf)
+		if buf[0] == '\n' {
+			return pos + 1
+		}
+		pos--
+	}
+
+	return 0
+}
+
 // readTimestampAt 读取指定偏移处的日志时间戳
+// 支持 Docker JSON 格式和纯文本格式
 func readTimestampAt(file *os.File, offset int64) (string, error) {
 	_, err := file.Seek(offset, 0)
 	if err != nil {
@@ -261,18 +298,30 @@ func readTimestampAt(file *os.File, offset int64) (string, error) {
 		return "", fmt.Errorf("空行")
 	}
 
+	// 尝试解析 JSON 格式（Docker 日志）
 	var logEntry struct {
-		Time string `json:"time"`
+		Log string `json:"log"`
 	}
-	if err := json.Unmarshal([]byte(line), &logEntry); err != nil {
-		return "", err
+	if err := json.Unmarshal([]byte(line), &logEntry); err == nil && logEntry.Log != "" {
+		// 从日志内容中提取时间戳（与 parser 保持一致）
+		timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
+		matches := timeRegex.FindStringSubmatch(logEntry.Log)
+		if len(matches) >= 2 {
+			return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
+		}
+		return "", fmt.Errorf("无法从 JSON 日志内容提取时间戳")
 	}
 
-	if logEntry.Time == "" {
-		return "", fmt.Errorf("无法提取时间戳")
+	// 尝试解析纯文本格式：[YYYY-MM-DD HH:MM:SS]
+	timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
+	matches := timeRegex.FindStringSubmatch(line)
+	if len(matches) >= 2 {
+		// 转换为 ISO 格式（东8区）
+		localTime := matches[1]
+		return strings.Replace(localTime, " ", "T", 1) + "+08:00", nil
 	}
 
-	return logEntry.Time, nil
+	return "", fmt.Errorf("无法提取时间戳")
 }
 
 // SaveCaveStats 保存洞穴统计结果到文件

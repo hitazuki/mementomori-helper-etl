@@ -31,7 +31,6 @@ const (
 type ChallengeRecord struct {
 	Character   string          `json:"-"`
 	Timestamp   string          `json:"-"`
-	PreciseTime string          `json:"-"`
 	Type        ChallengeType   `json:"-"`
 	Level       string          `json:"level"`
 	TowerType   TowerType       `json:"tower_type,omitempty"`

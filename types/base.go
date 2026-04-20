@@ -2,11 +2,10 @@ package types
 
 // ChangeRecord 物品变动记录（钻石/饼干/红水通用）
 type ChangeRecord struct {
-	Character   string `json:"character"`
-	Timestamp   string `json:"timestamp"`
-	PreciseTime string `json:"-"`
-	Amount      int    `json:"amount"` // 正数=获取，负数=消耗
-	Source      string `json:"source,omitempty"`
+	Character string `json:"character"`
+	Timestamp string `json:"timestamp"`
+	Amount    int    `json:"amount"` // 正数=获取，负数=消耗
+	Source    string `json:"source,omitempty"`
 }
 
 // SourceStats 按来源的统计
