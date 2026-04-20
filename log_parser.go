@@ -331,9 +331,34 @@ func parseUpgradePanaceaLine(parsed ParsedLog, lastSource string) *ItemRecord {
 
 // mapSourceToAlias 将来源日志映射为友好的来源名称
 func mapSourceToAlias(source string) string {
+	// 优先级：特殊短语 > 模式匹配
+
+	// 特殊映射
 	if source == "You have triumphed." {
 		return "temple of illusions"
 	}
+
+	// Gacha 日志：提取 " N times" 之前的内容
+	// 例如: "Gacha 黒葬武具ガチャ 5 times, used Gold×250000" -> "Gacha 黒葬武具ガチャ"
+	if strings.HasPrefix(source, "Gacha ") {
+		if idx := strings.Index(source, " times"); idx != -1 {
+			// 找到 " times" 后，向前查找 " N" 的起始位置
+			beforeTimes := source[:idx]
+			// 从末尾向前找空格，提取数字之前的部分
+			if lastSpace := strings.LastIndex(beforeTimes, " "); lastSpace != -1 {
+				return strings.TrimSpace(beforeTimes[:lastSpace])
+			}
+		}
+	}
+
+	// Open 日志：提取 " x N" 之前的内容
+	// 例如: "Open Silver Sealed Chest x 2" -> "Open Silver Sealed Chest"
+	if strings.HasPrefix(source, "Open ") {
+		if idx := strings.Index(source, " x "); idx != -1 {
+			return strings.TrimSpace(source[:idx])
+		}
+	}
+
 	return source
 }
 
