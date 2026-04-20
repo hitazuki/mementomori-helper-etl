@@ -146,6 +146,58 @@ type ChallengeStats struct {
 	Towers map[TowerType]map[string]*ChallengeLevelStats `json:"towers"` // tower -> level -> stats
 }
 
+// ItemRecord 物品记录（饼干/红水）
+type ItemRecord struct {
+	Character   string `json:"character"`
+	Timestamp   string `json:"timestamp"`
+	PreciseTime string `json:"-"`
+	Amount      int    `json:"amount"` // 正数获取，负数消耗
+	Source      string `json:"source,omitempty"`
+}
+
+// ItemDailyStats 物品每日统计
+type ItemDailyStats struct {
+	Date      string                 `json:"date"`
+	Gain      int                    `json:"gain"`
+	Consume   int                    `json:"consume"`
+	NetChange int                    `json:"net_change"`
+	Sources   map[string]SourceStats `json:"sources,omitempty"`
+}
+
+// ItemWeeklyStats 物品每周统计
+type ItemWeeklyStats struct {
+	Week      string                 `json:"week"`
+	Gain      int                    `json:"gain"`
+	Consume   int                    `json:"consume"`
+	NetChange int                    `json:"net_change"`
+	Sources   map[string]SourceStats `json:"sources,omitempty"`
+}
+
+// ItemMonthlyStats 物品每月统计
+type ItemMonthlyStats struct {
+	Month     string                 `json:"month"`
+	Gain      int                    `json:"gain"`
+	Consume   int                    `json:"consume"`
+	NetChange int                    `json:"net_change"`
+	Sources   map[string]SourceStats `json:"sources,omitempty"`
+}
+
+// ItemTotalStats 物品总计
+type ItemTotalStats struct {
+	Gain      int                    `json:"gain"`
+	Consume   int                    `json:"consume"`
+	NetChange int                    `json:"net_change"`
+	Sources   map[string]SourceStats `json:"sources,omitempty"`
+}
+
+// ItemStats 单个物品的统计
+type ItemStats struct {
+	Daily   map[string]*ItemDailyStats   `json:"daily"`
+	Weekly  map[string]*ItemWeeklyStats  `json:"weekly"`
+	Monthly map[string]*ItemMonthlyStats `json:"monthly"`
+	Total   *ItemTotalStats              `json:"total"`
+}
+
 // 正则表达式
 var (
 	diamondGainRegex    = regexp.MustCompile(`Diamonds\(None\) × (\d+)`)
@@ -159,4 +211,8 @@ var (
 	challengeTowerRegex = regexp.MustCompile(`^Challenge Tower of (Infinity|Azure|Crimson|Emerald|Amber) (\d+) layer`)
 	challengeSuccessRegex = regexp.MustCompile(`triumphed`)
 	challengeFailedRegex  = regexp.MustCompile(`failed`)
+
+	// 物品变动日志正则
+	runeTicketRegex     = regexp.MustCompile(`^Name: Rune Ticket\([A-Z]+\) × (-?\d+)`)
+	upgradePanaceaRegex = regexp.MustCompile(`^Name: Upgrade Panacea\([A-Z]+\) × (-?\d+)`)
 )

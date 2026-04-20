@@ -144,10 +144,12 @@ func isValidSource(body string) bool {
 type LogType int
 
 const (
-	LogTypeNone      LogType = iota // 未知类型
-	LogTypeDiamond                   // 钻石记录
-	LogTypeCave                      // 洞穴记录
-	LogTypeChallenge                 // 挑战记录
+	LogTypeNone           LogType = iota // 未知类型
+	LogTypeDiamond                        // 钻石记录
+	LogTypeCave                           // 洞穴记录
+	LogTypeChallenge                      // 挑战记录
+	LogTypeRuneTicket                     // 饼干记录
+	LogTypeUpgradePanacea                 // 红水记录
 )
 
 // identifyLogType 识别日志类型（一次扫描确定类型）
@@ -155,6 +157,16 @@ func identifyLogType(body string) LogType {
 	// 检查钻石记录（包含 Diamonds 关键字）
 	if strings.Contains(body, "Diamonds(None)") {
 		return LogTypeDiamond
+	}
+
+	// 检查饼干记录
+	if runeTicketRegex.MatchString(body) {
+		return LogTypeRuneTicket
+	}
+
+	// 检查红水记录
+	if upgradePanaceaRegex.MatchString(body) {
+		return LogTypeUpgradePanacea
 	}
 
 	// 检查洞穴记录（包含洞穴关键字）
@@ -275,6 +287,54 @@ func parseChallengeLine(parsed ParsedLog) *ChallengeRecord {
 	}
 
 	return nil
+}
+
+// parseRuneTicketLine 从已解析的日志中提取饼干记录
+func parseRuneTicketLine(parsed ParsedLog, lastSource string) *ItemRecord {
+	body := parsed.Body
+
+	matches := runeTicketRegex.FindStringSubmatch(body)
+	if len(matches) < 2 {
+		return nil
+	}
+
+	amount, _ := strconv.Atoi(matches[1])
+
+	return &ItemRecord{
+		Character:   parsed.Character,
+		Timestamp:   parsed.Timestamp,
+		PreciseTime: parsed.PreciseTime,
+		Amount:      amount,
+		Source:      lastSource,
+	}
+}
+
+// parseUpgradePanaceaLine 从已解析的日志中提取红水记录
+func parseUpgradePanaceaLine(parsed ParsedLog, lastSource string) *ItemRecord {
+	body := parsed.Body
+
+	matches := upgradePanaceaRegex.FindStringSubmatch(body)
+	if len(matches) < 2 {
+		return nil
+	}
+
+	amount, _ := strconv.Atoi(matches[1])
+
+	return &ItemRecord{
+		Character:   parsed.Character,
+		Timestamp:   parsed.Timestamp,
+		PreciseTime: parsed.PreciseTime,
+		Amount:      amount,
+		Source:      lastSource,
+	}
+}
+
+// mapSourceToAlias 将来源日志映射为友好的来源名称
+func mapSourceToAlias(source string) string {
+	if source == "You have triumphed." {
+		return "temple of illusions"
+	}
+	return source
 }
 
 // readTimestampAt 读取指定偏移处的日志时间戳（精确时间，用于二分查找）
@@ -417,7 +477,13 @@ func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
 
 // processStream 流式处理日志（内存友好，适合 GB 级文件）
 // 直接将记录添加到聚合器，不缓存所有记录
-func (p *LogProcessor) processStream(agg *Aggregator, caveAgg *CaveAggregator, challengeAgg *ChallengeAggregator) string {
+func (p *LogProcessor) processStream(
+	agg *Aggregator,
+	caveAgg *CaveAggregator,
+	challengeAgg *ChallengeAggregator,
+	runeTicketAgg *RuneTicketAggregator,
+	upgradePanaceaAgg *UpgradePanaceaAggregator,
+) string {
 	// 打开日志文件
 	file, err := os.Open(p.inputLogPath)
 	if err != nil {
@@ -508,6 +574,30 @@ func (p *LogProcessor) processStream(agg *Aggregator, caveAgg *CaveAggregator, c
 			challengeRecord := parseChallengeLine(parsed)
 			if challengeRecord != nil {
 				challengeAgg.AddRecord(*challengeRecord)
+			}
+
+		case LogTypeRuneTicket:
+			// 提取饼干记录
+			rawSource := lastSourceByCharacter[parsed.Character]
+			source := mapSourceToAlias(rawSource)
+			if source == "" {
+				source = "none"
+			}
+			record := parseRuneTicketLine(parsed, source)
+			if record != nil {
+				runeTicketAgg.AddRecord(*record)
+			}
+
+		case LogTypeUpgradePanacea:
+			// 提取红水记录
+			rawSource := lastSourceByCharacter[parsed.Character]
+			source := mapSourceToAlias(rawSource)
+			if source == "" {
+				source = "none"
+			}
+			record := parseUpgradePanaceaLine(parsed, source)
+			if record != nil {
+				upgradePanaceaAgg.AddRecord(*record)
 			}
 		}
 		// line、parsed 在此作用域结束后可被 GC 回收
