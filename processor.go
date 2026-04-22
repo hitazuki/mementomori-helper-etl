@@ -239,9 +239,15 @@ func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
 		return -1, nil
 	}
 
-	firstTimeInFile, err := readTimestampAt(file, 0)
-	if err == nil && firstTimeInFile > lastLogTime {
+	// 查找文件开头第一条有效时间戳
+	// 注意：文件开头可能是非游戏日志（如系统日志），需要跳过
+	firstTimeInFile, firstValidPos := findFirstValidTimestamp(file, fileSize)
+	if firstTimeInFile != "" && firstTimeInFile > lastLogTime {
+		// 文件第一条有效记录时间 > checkpoint，从头开始处理
 		return 0, nil
+	}
+	if firstValidPos > 0 {
+		// 文件开头有无效行，记录位置供后续参考
 	}
 
 	// 二分查找：找第一个 > checkpoint 的记录
@@ -341,6 +347,66 @@ func findLastLineStart(file *os.File, fileSize int64) int64 {
 	}
 
 	return 0
+}
+
+// findFirstValidTimestamp 查找文件中第一条有效时间戳
+// 返回时间戳和对应的文件位置（跳过开头的非游戏日志）
+func findFirstValidTimestamp(file *os.File, fileSize int64) (string, int64) {
+	_, err := file.Seek(0, 0)
+	if err != nil {
+		return "", 0
+	}
+
+	reader := bufio.NewReader(file)
+	var offset int64 = 0
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			break
+		}
+
+		line = strings.TrimSpace(line)
+		if line != "" {
+			// 尝试提取时间戳
+			timestamp, _ := extractTimestampFromLine(line)
+			if timestamp != "" {
+				return timestamp, offset
+			}
+		}
+
+		offset += int64(len(line) + 1) // +1 for newline
+		if err == io.EOF {
+			break
+		}
+	}
+
+	return "", 0
+}
+
+// extractTimestampFromLine 从单行提取时间戳
+func extractTimestampFromLine(line string) (string, error) {
+	// 尝试解析 JSON 格式（Docker 日志）
+	var logEntry struct {
+		Log string `json:"log"`
+	}
+	if err := json.Unmarshal([]byte(line), &logEntry); err == nil && logEntry.Log != "" {
+		timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
+		matches := timeRegex.FindStringSubmatch(logEntry.Log)
+		if len(matches) >= 2 {
+			return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
+		}
+		return "", fmt.Errorf("无法从 JSON 日志内容提取时间戳")
+	}
+
+	// 尝试解析纯文本格式：[YYYY-MM-DD HH:MM:SS]
+	timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
+	matches := timeRegex.FindStringSubmatch(line)
+	if len(matches) >= 2 {
+		return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
+	}
+
+	return "", fmt.Errorf("无法提取时间戳")
 }
 
 // readTimestampAt 读取指定偏移处的日志时间戳

@@ -92,12 +92,9 @@ func (d *Detector) DetectFromSample(lines []string, sampleSize int) Language {
 
 // DetectSingleLine detects language from a single line.
 // Returns the detected language and a confidence score.
+// Note: The caller should ensure only valid game log content is passed
+// (e.g., parsed.Body after IsValid check), so we don't need gameLogPattern filtering.
 func (d *Detector) DetectSingleLine(line string) (Language, int) {
-	// Skip non-game log lines
-	if !d.gameLogPattern.MatchString(line) {
-		return "", 0
-	}
-
 	scores := make(map[Language]int)
 	for lang, patterns := range d.signatures {
 		for _, p := range patterns {

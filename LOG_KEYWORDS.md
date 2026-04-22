@@ -39,8 +39,8 @@ mementomori-helper 输出的日志格式：`{Name}: {itemName}({itemRarity}) × 
 
 | 英文 (EN) | 繁中 (TW) | 简中 (CN) | 日文 (JA) | 韩文 (KO) |
 | --------- | --------- | --------- | --------- | --------- |
-| Enter Cave of Space-Time | 进入 時空洞窟 | 进入 时空洞窟 | (待确认) | (待确认) |
-| Cave of Space-Time Finished | 時空洞窟已完成 | 时空洞窟已完成 | (待确认) | (待确认) |
+| Enter Cave of Space-Time | 进入 時空洞窟 | 进入 时空洞窟 | 時空の洞窟に入る | 시공의 동굴 입장 |
+| Cave of Space-Time Finished | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了 | 시공의 동굴 완료 |
 
 ## 塔名称
 
@@ -56,8 +56,8 @@ mementomori-helper 输出的日志格式：`{Name}: {itemName}({itemRarity}) × 
 
 | 英文 (EN) | 繁中 (TW) | 简中 (CN) | 日文 (JA) | 韩文 (KO) |
 | --------- | --------- | --------- | --------- | --------- |
-| triumphed | 勝利      | 胜利      | (待确认)  | (待确认)  |
-| failed    | 敗北      | 败北      | (待确认)  | (待确认)  |
+| triumphed | 勝利      | 胜利      | 勝利      | 승리      |
+| failed    | 敗北      | 败北      | 敗北      | 패배      |
 | Challenge | 挑战      | 挑战      | 挑戦      | 도전      |
 
 ---
