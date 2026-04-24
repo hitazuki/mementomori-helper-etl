@@ -33,3 +33,19 @@ func IsValidSource(body string) bool {
 
 	return true
 }
+
+// ShouldClearSource 检查是否需要清空来源上下文
+// 系统/错误日志需要清空，Name/Challenge 日志保留当前来源
+func ShouldClearSource(body string) bool {
+	// OnError 日志需要清空来源
+	if strings.HasPrefix(body, "OnError") {
+		return true
+	}
+
+	// 系统异常日志需要清空来源
+	if strings.HasPrefix(body, "System.") {
+		return true
+	}
+
+	return false
+}

@@ -152,7 +152,11 @@ func (p *LogProcessor) Process(
 		// 更新来源上下文
 		if parser.IsValidSource(parsed.Body) {
 			lastSourceByCharacter[parsed.Character] = parsed.Body
+		} else if parser.ShouldClearSource(parsed.Body) {
+			// 系统日志等需要清空来源上下文
+			delete(lastSourceByCharacter, parsed.Character)
 		}
+		// Name/Challenge 日志保留当前来源（不清空）
 
 		// 识别日志类型并分发
 		logType := parser.IdentifyLogType(parsed.Body)
