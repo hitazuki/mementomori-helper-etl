@@ -26,8 +26,8 @@ func ExtractChangeRecord(parsed ParsedLog, source string, logType LogType) *type
 		return nil
 	}
 
-	// 统一应用来源映射
-	mappedSource := MapSourceToAlias(source)
+	// 统一应用来源映射，获取别名和来源ID
+	mappedSource, sourceID := MapSourceWithID(source)
 	if mappedSource == "" {
 		mappedSource = "none"
 	}
@@ -37,6 +37,7 @@ func ExtractChangeRecord(parsed ParsedLog, source string, logType LogType) *type
 		Timestamp:   parsed.Timestamp,
 		Amount:      amount,
 		Source:      mappedSource,
+		SourceID:    int(sourceID),
 	}
 }
 

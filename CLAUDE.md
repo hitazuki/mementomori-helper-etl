@@ -13,11 +13,13 @@ MMTH ETL - mementomori-helper的日志处理工具
 go build -o mmth_etl .
 
 # 运行
-./mmth_etl [-output <输出目录>] <日志文件路径>
+./mmth_etl [-output <输出目录>] [-lang <语言>] [-records] <日志文件路径>
 
 # 示例
 ./mmth_etl ./logs/game_log.json
 ./mmth_etl -output ./data ./logs/game_log.json
+./mmth_etl -lang tw ./logs/game_log.json
+./mmth_etl -records=false ./logs/game_log.json
 
 # 测试
 go test ./... -v
@@ -28,6 +30,8 @@ go test ./... -v
 | 参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-output` | 输出目录路径 | `./data` |
+| `-lang` | 日志语言 (en/tw/ja/ko/auto/dynamic) | `dynamic` |
+| `-records` | 保留详细变动记录 | `true` |
 | `<日志文件路径>` | 待处理的日志文件路径 | 必填 |
 
 ## 规范

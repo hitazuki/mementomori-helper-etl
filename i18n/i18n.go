@@ -82,3 +82,40 @@ func (m *Manager) GetPatterns(lang Language) *PatternSet {
 	}
 	return m.patterns[LangEn]
 }
+
+// IsNameLabelLine checks if the body is an item change log (starts with Name: label).
+// Item change logs cannot be used as source context.
+func (m *Manager) IsNameLabelLine(body string) bool {
+	def := languageDefinitions[m.currentLang]
+	prefix := def.NameLabel + ":"
+	return len(body) >= len(prefix) && body[:len(prefix)] == prefix
+}
+
+// IsChallengeLine checks if the body is a challenge log (starts with Challenge keyword).
+// Challenge logs cannot be used as source context.
+func (m *Manager) IsChallengeLine(body string) bool {
+	def := languageDefinitions[m.currentLang]
+	prefix := def.ChallengeKeyword + " "
+	return len(body) >= len(prefix) && body[:len(prefix)] == prefix
+}
+
+// GetVictoryPhrases returns all victory phrases in all languages.
+// Used for source mapping (e.g., "You have triumphed." in English).
+func (m *Manager) GetVictoryPhrases() map[string]string {
+	result := make(map[string]string)
+	for _, lang := range []Language{LangEn, LangTw, LangJa, LangKo} {
+		def := languageDefinitions[lang]
+		result[def.SuccessKeyword] = def.SuccessKeyword
+	}
+	return result
+}
+
+// GetGachaPrefix returns the Gacha prefix for the current language.
+func (m *Manager) GetGachaPrefix() string {
+	return "Gacha "
+}
+
+// GetOpenPrefix returns the Open prefix for the current language.
+func (m *Manager) GetOpenPrefix() string {
+	return "Open "
+}

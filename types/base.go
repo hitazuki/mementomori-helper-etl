@@ -6,6 +6,7 @@ type ChangeRecord struct {
 	Timestamp string `json:"timestamp"`
 	Amount    int    `json:"amount"` // 正数=获取，负数=消耗
 	Source    string `json:"source,omitempty"`
+	SourceID  int    `json:"source_id,omitempty"` // 来源ID：游戏TextResource ID 或 helper自定义ID
 }
 
 // SourceStats 按来源的统计

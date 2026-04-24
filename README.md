@@ -20,7 +20,7 @@ MMTH ETL 是 [mementomori-helper](https://github.com/moonheart/mementomori-helpe
 - **智能增量处理**：基于时间戳的二分查找定位，只处理新增日志
 - **统一来源映射**：所有物品变动日志应用相同的来源映射规则
 - **角色隔离**：每个角色的来源独立追踪
-- **内存优化**：可选保留详细记录（默认关闭），流式处理不缓存完整数据集
+- **内存优化**：可选保留详细记录（默认开启），流式处理不缓存完整数据集
 
 ## 架构
 
@@ -62,13 +62,16 @@ mmth-etl/
 ### 命令行参数
 
 ```bash
-./mmth_etl [-output <输出目录>] [-lang <语言>] <日志文件路径>
+./mmth_etl [-output <输出目录>] [-lang <语言>] [-records] [-window <大小>] [-threshold <值>] <日志文件路径>
 ```
 
 | 参数 | 说明 | 默认值 |
 | ------ | ------ | -------- |
 | `-output` | 输出目录路径 | `./data` |
 | `-lang` | 日志语言 | `dynamic` |
+| `-records` | 保留详细变动记录 | `true` |
+| `-window` | 动态检测滑动窗口大小 | `100` |
+| `-threshold` | 语言切换阈值 | `5`（窗口小时自动调整） |
 | `<日志文件路径>` | 待处理的日志文件路径 | 必填 |
 
 ### 语言参数说明
@@ -91,17 +94,14 @@ go build -o mmth_etl .
 # 构建时注入版本信息
 go build -ldflags="-s -w -X main.Version=1.0.0" -o mmth_etl .
 
-# 运行（英文日志，默认）
+# 运行（默认动态检测语言，保留详细记录）
 ./mmth_etl ./logs/game_log.json
 
 # 运行（繁体中文日志）
 ./mmth_etl -lang tw ./logs/game_log.json
 
-# 运行（自动检测语言）
-./mmth_etl -lang auto ./logs/game_log.json
-
-# 运行（动态检测语言切换）
-./mmth_etl -lang dynamic ./logs/game_log.json
+# 运行（不保留详细记录，减少输出大小）
+./mmth_etl -records=false ./logs/game_log.json
 
 # 查看版本
 ./mmth_etl ./logs/game_log.json
@@ -224,6 +224,37 @@ Name: Diamonds(None) × 100
 2. 每行日志识别时，同时检测语言特征并累加得分
 3. 定期检查累计得分，当某语言显著领先时触发切换
 
+**参数调优**：
+
+| 参数 | 说明 | 推荐值 | 效果 |
+| ------ | ------ | -------- | ------ |
+| `-window 1` | 逐行检测 | 快速切换 | 每行都检查，适合语言频繁切换 |
+| `-window 10` | 小窗口 | 快速响应 | 较快响应，可能轻微抖动 |
+| `-window 100` | 大窗口（默认） | 稳定检测 | 减少抖动，适合语言稳定的日志 |
+| `-threshold 1` | 低阈值 | 敏感切换 | 容易触发切换 |
+| `-threshold 5` | 默认阈值 | 平衡 | 需要5分优势才切换 |
+| `-threshold 10` | 高阈值 | 稳定切换 | 需要明显优势才切换 |
+
+**窗口大小 vs 检查间隔**：
+
+- 窗口大小：决定累积多少行的语言得分
+- 检查间隔：`window/2`，即每多少行检查一次是否需要切换
+
+**自适应阈值**：当窗口大小小于阈值时，阈值自动调整为 `max(window/2, 1)`，确保逐行检测时能正常切换。
+
+**使用示例**：
+
+```bash
+# 逐行检测（窗口1，阈值自动调整为1）
+./mmth_etl -window 1 -lang dynamic ./logs/app.log
+
+# 快速响应切换（小窗口+低阈值）
+./mmth_etl -window 10 -threshold 3 -lang dynamic ./logs/app.log
+
+# 稳定检测（大窗口+高阈值）
+./mmth_etl -window 100 -threshold 10 -lang dynamic ./logs/app.log
+```
+
 **性能优化**：
 
 | 方法     | 额外开销 | 适用场景         |
@@ -241,6 +272,14 @@ Name: Diamonds(None) × 100
     "daily": {
       "2026-04-20": {
         "date": "2026-04-20",
+        "records": [
+          {
+            "character": "角色名",
+            "timestamp": "2026-04-20T10:30:00+08:00",
+            "amount": 100,
+            "source": "temple of illusions"
+          }
+        ],
         "gain": 100,
         "consume": 50,
         "net_change": 50,
@@ -261,6 +300,18 @@ Name: Diamonds(None) × 100
   }
 }
 ```
+
+**字段说明**：
+
+| 字段 | 说明 |
+| ------ | ------ |
+| `records` | 详细变动记录列表（包含时间戳、数量、来源） |
+| `gain` | 获取总量 |
+| `consume` | 消耗总量 |
+| `net_change` | 净变化（获取 - 消耗） |
+| `sources` | 按来源分组的统计 |
+
+使用 `-records=false` 可关闭详细记录输出以减少文件大小。
 
 ### 洞窟统计格式
 

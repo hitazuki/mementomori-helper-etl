@@ -28,13 +28,19 @@ func main() {
 	// 命令行参数
 	outputDir := flag.String("output", "./data", "输出目录路径")
 	langFlag := flag.String("lang", "dynamic", "日志语言 (en, tw, ja, ko, auto, dynamic)")
+	keepRecords := flag.Bool("records", true, "保留详细变动记录")
+	windowSize := flag.Int("window", 100, "动态语言检测滑动窗口大小 (1=逐行检测)")
+	switchThreshold := flag.Int("threshold", 5, "语言切换阈值 (窗口内得分差超过此值才切换)")
 	flag.Parse()
 
 	// 检查日志文件参数
 	args := flag.Args()
 	if len(args) < 1 {
-		fmt.Println("用法: mmth_etl [-output <输出目录>] [-lang <语言>] <日志文件路径>")
+		fmt.Println("用法: mmth_etl [-output <输出目录>] [-lang <语言>] [-records] [-window <大小>] [-threshold <值>] <日志文件路径>")
 		fmt.Println("  -lang: en (英文), tw (繁中), ja (日文), ko (韩文), auto (启动时自动检测), dynamic (运行时动态检测)")
+		fmt.Println("  -records: 保留详细变动记录")
+		fmt.Println("  -window: 动态检测滑动窗口大小 (默认100, 1=逐行检测)")
+		fmt.Println("  -threshold: 语言切换阈值 (默认5)")
 		os.Exit(1)
 	}
 	inputLogPath := args[0]
@@ -45,8 +51,13 @@ func main() {
 	// 动态语言检测配置
 	dynamicCfg := DynamicLanguageConfig{
 		Enabled:         false,
-		WindowSize:      100,
-		SwitchThreshold: 5,
+		WindowSize:      *windowSize,
+		SwitchThreshold: *switchThreshold,
+	}
+
+	// 自适应阈值：窗口较小时自动降低阈值
+	if dynamicCfg.WindowSize < dynamicCfg.SwitchThreshold {
+		dynamicCfg.SwitchThreshold = max(dynamicCfg.WindowSize/2, 1)
 	}
 
 	// 设置语言
@@ -56,7 +67,11 @@ func main() {
 		dynamicCfg.Enabled = true
 		// 初始使用英文，运行时会根据检测结果切换
 		i18nMgr.SetLanguage(i18n.LangEn)
-		log.Printf("启用动态语言检测模式 (窗口: %d, 切换阈值: %d)", dynamicCfg.WindowSize, dynamicCfg.SwitchThreshold)
+		mode := "批量检测"
+		if dynamicCfg.WindowSize == 1 {
+			mode = "逐行检测"
+		}
+		log.Printf("启用动态语言检测模式 (%s, 窗口: %d, 切换阈值: %d)", mode, dynamicCfg.WindowSize, dynamicCfg.SwitchThreshold)
 	case "auto":
 		// 自动检测语言（启动时一次性检测）
 		detector := i18n.NewDetector()
@@ -88,11 +103,11 @@ func main() {
 	processor := NewLogProcessor(inputLogPath, checkpoint, i18nMgr, dynamicCfg)
 
 	// 创建聚合器
-	diamondAgg := aggregator.NewChangeAggregator(false)
+	diamondAgg := aggregator.NewChangeAggregator(*keepRecords)
 	caveAgg := aggregator.NewCaveAggregator()
 	challengeAgg := aggregator.NewChallengeAggregator()
-	runeTicketAgg := aggregator.NewChangeAggregator(false)
-	upgradePanaceaAgg := aggregator.NewChangeAggregator(false)
+	runeTicketAgg := aggregator.NewChangeAggregator(*keepRecords)
+	upgradePanaceaAgg := aggregator.NewChangeAggregator(*keepRecords)
 
 	// 加载已有统计（增量处理）
 	diamondAgg.LoadExistingStats(diamondJSONPath)

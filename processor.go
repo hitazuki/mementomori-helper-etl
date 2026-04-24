@@ -98,7 +98,7 @@ func (p *LogProcessor) Process(
 	lineCount := 0
 	newRecordCount := 0
 	languageSwitchCount := 0
-	checkInterval := windowSize / 2 // 检测间隔
+	checkInterval := max(windowSize/2, 1)
 
 	for scanner.Scan() {
 		line := scanner.Text()
