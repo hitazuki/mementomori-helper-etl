@@ -10,79 +10,6 @@
 
 ---
 
-## 钻石来源统计
-
-| Source | 出现次数 | 繁中 | 简中 | 日文 | 韩文 |
-|--------|----------|------|------|------|------|
-| Fountain of Prayers: | 275 | 祈願之泉: | 祈愿之泉: | 祈りの泉: | 기원의 샘: |
-| Get Daily 's 60 Reward | 257 | 领取 Daily 的 60 奖励 | - | - | - |
-| Presents Box Claim All | 240 | 禮物箱 | 礼物箱 | プレゼントボックス | 선물 상자 |
-| Login | 62 | 登錄 | 登录 | ログイン | 로그인 |
-| Auto Buy Store Items | 52 | 自動購買商城物品 | 自动购买商城物品 | 自動購入ストアアイテム | 자동으로 상점 아이템 구매 |
-| Get Weekly 's 80 Reward | 48 | 领取 Weekly 的 80 奖励 | - | - | - |
-| A player in your World clears Floor {0} | 48 | 本世界首次有玩家... | - | - | - |
-| Monthly Boost Already Claimed | 36 | 每月強化組合包 | 每月强化组合包 | 月間ブースト | 월간 부스트 |
-| Total Logins This Month: 15/30 | 28 | 本月累計簽到天數： | 本月累计签到天数： | 今月の合計ログイン日数： | 이번 달 보상 수령: |
-| 祈願之泉: | 20 | - | - | - | - |
-| Total Logins This Month: 7/30 | 18 | - | - | - | - |
-| Total Logins This Month: 25/30 | 18 | - | - | - | - |
-| Get Daily 's 40 Reward | 18 | - | - | - | - |
-| Cave of Space-TimeFinished | 10 | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了 | 시공의 동굴 완료 |
-| A player in your World reaches | 15 | - | - | - | - |
-| You have no more challenges left. | 9 | 剩餘挑戰次數不足 | 剩余挑战次数不足 | 残り挑戦回数がありません | - |
-| Nothing to receive | 16 | - | - | - | - |
-| Get Daily 's 80 Reward | 4 | - | - | - | - |
-| Get Daily 's 20 Reward | 4 | - | - | - | - |
-| The expected diamond value... | 4 | 當前任務的鑽石數量期望值... | 当前任务的钻石数量期望值... | 現在のタスクのダイヤの期待値... | 현재 작업의 다이아몬드 예상 값... |
-| Create Team | 6 | 組建隊伍 | 组建队伍 | チーム作成 | - |
-| Join Random | 2 | - | - | - | - |
-| Get Weekly 's 60 Reward | 2 | - | - | - | - |
-| Auto Buy Store Items Finished | 2 | - | - | - | - |
-| A player in your World clears | 2 | - | - | - | - |
-| System.Collections.Generic.KeyNotFoundException... | 4 | - | - | - | - |
-
----
-
-## 符石兑换券来源统计
-
-| Source | 出现次数 | 说明 |
-|--------|----------|------|
-| Auto Buy Store Items | 189 | helper自定义 |
-| Gacha 黒葬武具ガチャ | 217 | Gacha抽取 |
-| temple of illusions | 128 | Temple of Illusions胜利 |
-| Open Gold Sealed Chest | 112 | 开启宝箱 |
-| Open Silver Sealed Chest | 94 | 开启宝箱 |
-| Gacha 魔女の秘奥ガチャ | 90 | Gacha抽取 |
-| Gacha 聖天使の神託ガチャ（蒼穹の銀勲） | 25 | Gacha抽取 |
-| Gacha 聖天使の神託ガチャ（天契の聖杯） | 18 | Gacha抽取 |
-| Gacha 聖天使の神託ガチャ（希求の神翼） | 16 | Gacha抽取 |
-| Gacha 聖天使の神託ガチャ（悠園の果実） | 12 | Gacha抽取 |
-| 抽卡 黒葬武具ガチャ 5 次, 消耗 金幣×250000 | 12 | 繁中Gacha |
-| 開啟 上級封印寶箱 x 5 | 8 | 繁中宝箱 |
-| 自动购买商城物品 | 8 | 简中helper |
-| 開啟 中級封印寶箱 x 2 | 4 | 繁中宝箱 |
-| 開啟 中級封印寶箱 x 12 | 4 | 繁中宝箱 |
-| 開啟 上級封印寶箱 x 2 | 4 | 繁中宝箱 |
-| 抽卡 聖天使の神託ガチャ（希求の神翼） 1 次, 消耗 鑽石×0 | 4 | 繁中Gacha |
-| Total World DMG: 2500000000000 | 4 | 公会战 |
-
----
-
-## 强化秘药来源统计
-
-| Source | 出现次数 | 繁中 | 简中 | 日文 | 韩文 |
-|--------|----------|------|------|------|------|
-| Tower of Infinity: | 273 | 無窮之塔: | 无穷之塔: | 無窮の塔: | 무한의 탑: |
-| temple of illusions | 152 | - | - | - | - |
-| Gacha 聖天使の神託ガチャ（蒼穹の銀勲） | 19 | - | - | - | - |
-| 無窮之塔: | 16 | - | - | - | - |
-| Open Amphora of Creation | 10 | - | - | - | - |
-| Gacha 聖天使の神託ガチャ（悠園の果実） | 7 | - | - | - | - |
-| Gacha 聖天使の神託ガチャ（天契の聖杯） | 7 | - | - | - | - |
-| Gacha 聖天使の神託ガチャ（希求の神翼） | 6 | - | - | - | - |
-
----
-
 ## 可识别来源列表
 
 ### 游戏内置（部分匹配）
@@ -90,11 +17,12 @@
 | Source | Source ID | 繁中 | 简中 | 日文 | 韩文 |
 |--------|-----------|------|------|------|------|
 | Fountain of Prayers: | 140 | 祈願之泉: | 祈愿之泉: | 祈りの泉: | 기원의 샘: |
+| Open | 67 | 開啟 | 开启 | 開く | 열기 |
 | Login Bonus | 719 | 簽到獎勵: | 签到奖励: | ログイン | 로그인 |
 | Presents Box Claim All | 21308 | 禮物箱 | 礼物箱 | プレゼントボックス | 선물 상자 |
 | Monthly Boost Already Claimed | 21332 | 每月強化組合包 | 每月强化组合包 | 月間ブースト | 월간 부스트 |
 | Total Logins This Month: X/30 | 3331 | 本月累計簽到天數： | 本月累计签到天数： | 今月の合計ログイン日数： | 이번 달 보상 수령: |
-| A player in your World clears/reaches | 23277 | 本世界首次有玩家... | - | ワールド内のプレイヤーが初めて | 월드 내 플레이어가 최초로 |
+| A player in your World clears/reaches | 23277 | 本世界首次有玩家 | 本世界首次有玩家 | ワールド内のプレイヤーが初めて | 월드 내 플레이어가 최초로 |
 
 ### helper自定义（RewardMissionMsg 模式）
 
@@ -110,22 +38,58 @@
 |--------|-----------|------|------|------|------|------|
 | Auto Buy Store Items | 100002 | Auto Buy Store Items | 自動購買商城物品 | 自动购买商城物品 | 自動購入ストアアイテム | 자동으로 상점 아이템 구매 |
 | Expected Value Below 20 | 100003 | The expected diamond value... | 當前任務的鑽石數量期望值... | 当前任务的钻石数量期望值... | 現在のタスクのダイヤの期待値... | 현재 작업의 다이아몬드 예상 값... |
-| Missions Claim All | 100004 | You have no more challenges left. / Cave of Space-TimeFinished | 剩餘挑戰次數不足 / 時空洞窟已完成 | 剩余挑战次数不足 / 时空洞窟已完成 | 残り挑戦回数がありません / 時空の洞窟完了 | 시공의 동굴 완료 |
+| Missions Claim All | 100004 | You have no more challenges left. / Cave of Space-TimeFinished / Nothing to receive | 剩餘挑戰次數不足 / 時空洞窟已完成 / 没有可以领取的 | 剩余挑战次数不足 / 时空洞窟已完成 | 残り挑戦回数がありません / 時空の洞窟完了 / 受け取れるものはありません | 시공의 동굴 완료 / 수령 가능한 것이 없습니다 |
 | Gacha | 100005 | Gacha | 抽卡 | 抽卡 | Gacha | 가챠 |
-| Open | 100006 | Open | 開啟 | 开启 | 開く | 열기 |
-| Tower of Infinity | 100007 | Tower of Infinity: | 無窮之塔: | 无穷之塔: | 無窮의 塔: | 무한의 탑: |
+| Tower of Infinity | 100007 | Tower of Infinity: | 無窮之塔: | 无穷之塔: | 無窮の塔: | 무한의 탑: |
 | Temple of Illusions | 100008 | You have triumphed. | 勝利 | 胜利 | 勝利しました | 승리했습니다. |
+
+---
+
+## 特殊来源提取规则
+
+### Gacha 来源
+
+Gacha 日志格式：`<prefix> <gacha_name> <count> <suffix>, ...`
+
+**多语言前缀**：
+| 语言 | 前缀 |
+|------|------|
+| EN/JA | Gacha |
+| TW/CN | 抽卡 |
+| KO | 가챠 |
+
+**提取规则**：截取第二个空格之前的内容
+- `Gacha 黒葬武具ガチャ 5 times` → `Gacha 黒葬武具ガチャ`
+- `抽卡 黒葬武具ガチャ 5 次` → `抽卡 黒葬武具ガチャ`
+
+### Open 来源
+
+Open 日志格式：`<prefix> <item_name> x <count>`
+
+**多语言前缀**：
+| 语言 | 前缀 |
+|------|------|
+| EN | Open |
+| TW | 開啟 |
+| CN | 开启 |
+| JA | 開く |
+| KO | 열기 |
+
+**提取规则**：截取 ` x` 之前的内容
+- `Open Gold Sealed Chest x 5` → `Open Gold Sealed Chest`
+- `開啟 上級封印寶箱 x 5` → `開啟 上級封印寶箱`
 
 ---
 
 ## 代码实现
 
-### 来源映射表 (parser/source_mapping.go)
+### 来源映射表 (i18n/sources.go)
 
 ```go
 // Game built-in source IDs from TextResource
 const (
     SourceIDFountainOfPrayers SourceID = 140   // Fountain of Prayers -> 祈願之泉
+    SourceIDOpen              SourceID = 67    // Open -> 開啟
     SourceIDLoginBonus        SourceID = 719   // Login Bonus -> 簽到獎勵
     SourceIDPresentsBox       SourceID = 21308 // Presents Box -> 禮物箱
     SourceIDMonthlyBoost      SourceID = 21332 // Monthly Boost -> 每月強化組合包
@@ -139,7 +103,6 @@ const (
     SourceIDExpectedValue   SourceID = 100003 // Expected diamond value...
     SourceIDMissionsClaimed SourceID = 100004 // Missions Claim All
     SourceIDGacha           SourceID = 100005 // Gacha (抽卡)
-    SourceIDOpen            SourceID = 100006 // Open (開啟)
     SourceIDTowerInfinity   SourceID = 100007 // Tower of Infinity (無窮之塔)
     SourceIDTempleIllusions SourceID = 100008 // Temple of Illusions (勝利)
 )

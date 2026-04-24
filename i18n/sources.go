@@ -16,6 +16,7 @@ type SourceEntry struct {
 // Game built-in source IDs from TextResource
 const (
 	SourceIDFountainOfPrayers SourceID = 140   // Fountain of Prayers
+	SourceIDOpen              SourceID = 67    // Open (開啟)
 	SourceIDLoginBonus        SourceID = 719   // Login Bonus (签到奖励)
 	SourceIDPresentsBox       SourceID = 21308 // Presents Box
 	SourceIDMonthlyBoost      SourceID = 21332 // Monthly Boost
@@ -36,7 +37,6 @@ const (
 	SourceIDExpectedValue   SourceID = 100003
 	SourceIDMissionsClaimed SourceID = 100004
 	SourceIDGacha           SourceID = 100005
-	SourceIDOpen            SourceID = 100006
 	SourceIDTowerInfinity   SourceID = 100007
 	SourceIDTempleIllusions SourceID = 100008
 )
