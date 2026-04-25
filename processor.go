@@ -111,6 +111,11 @@ func (p *LogProcessor) Process(
 			}
 		}
 
+		// Update checkpoint for all valid records
+		if parsed.Timestamp != "" {
+			lastLogTime = parsed.Timestamp
+		}
+
 		// Dynamic language detection
 		if p.dynamicLang.Enabled {
 			scoreAccumulator.AddLine(parsed.Body)
@@ -131,7 +136,7 @@ func (p *LogProcessor) Process(
 			if source == "" {
 				source = "none"
 			}
-			p.processItemChange(parsed, logType, source, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount, &lastLogTime)
+			p.processItemChange(parsed, logType, source, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount)
 
 		case parser.LogTypeCave:
 			// Cave logs can be source context
@@ -139,12 +144,14 @@ func (p *LogProcessor) Process(
 			caveRecord := parser.ExtractCaveRecord(parsed)
 			if caveRecord != nil {
 				caveAgg.AddRecord(*caveRecord)
+				newRecordCount++
 			}
 
 		case parser.LogTypeChallenge:
 			challengeRecord := parser.ExtractChallengeRecord(parsed)
 			if challengeRecord != nil {
 				challengeAgg.AddRecord(*challengeRecord)
+				newRecordCount++
 			}
 
 		case parser.LogTypeGacha, parser.LogTypeOpen:
@@ -213,7 +220,6 @@ func (p *LogProcessor) processItemChange(
 	upgradePanaceaAgg *aggregator.ChangeAggregator,
 	recordsWriter *storage.RecordsWriter,
 	newRecordCount *int,
-	lastLogTime *string,
 ) {
 	record := parser.ExtractChangeRecord(parsed, source, logType)
 	if record == nil {
@@ -227,18 +233,19 @@ func (p *LogProcessor) processItemChange(
 			recordsWriter.AppendRecord("diamond", *record)
 		}
 		*newRecordCount++
-		*lastLogTime = record.Timestamp
 
 	case parser.LogTypeRuneTicket:
 		runeTicketAgg.AddRecord(*record)
 		if recordsWriter != nil {
 			recordsWriter.AppendRecord("rune_ticket", *record)
 		}
+		*newRecordCount++
 
 	case parser.LogTypeUpgradePanacea:
 		upgradePanaceaAgg.AddRecord(*record)
 		if recordsWriter != nil {
 			recordsWriter.AppendRecord("upgrade_panacea", *record)
 		}
+		*newRecordCount++
 	}
 }
