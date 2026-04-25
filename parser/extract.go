@@ -95,10 +95,14 @@ func ExtractChallengeRecord(parsed ParsedLog) *types.ChallengeRecord {
 		Timestamp:   parsed.Timestamp,
 	}
 
-	if types.ChallengeSuccessRegex().MatchString(body) {
+	// Check failed first, then success
+	// Note: "勝利回数" (win count) contains "勝利", so check failed keyword first
+	if types.ChallengeFailedRegex().MatchString(body) {
+		record.Status = types.ChallengeStatusFailed
+	} else if types.ChallengeSuccessRegex().MatchString(body) {
 		record.Status = types.ChallengeStatusSuccess
 	} else {
-		record.Status = types.ChallengeStatusFailed
+		return nil // Not a challenge log
 	}
 
 	// 匹配主线挑战

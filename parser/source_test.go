@@ -17,7 +17,7 @@ func TestIsValidSource_English(t *testing.T) {
 		desc     string
 	}{
 		{"Name: Diamonds(None) × 100", false, "EN Name prefix"},
-		{"Challenge Tower of Infinity 800 layer", false, "EN Challenge prefix"},
+		{"Challenge Tower of Infinity 800 layer one time：You have triumphed.,  total：1, Success：1, Err: 0", false, "EN Challenge prefix"},
 		{"Gacha 10 times", true, "EN Gacha is valid source"},
 		{"Open Box x 5", true, "EN Open is valid source"},
 		{"OnError: something went wrong", false, "OnError prefix"},
@@ -70,7 +70,7 @@ func TestIsValidSource_Japanese(t *testing.T) {
 		desc     string
 	}{
 		{"名称: ダイヤ(None) × 100", false, "JA Name prefix"},
-		{"挑戦 無窮の塔 800", false, "JA Challenge prefix"},
+		{"挑戦 無窮の塔 800 層に挑戦 1 回：勝利しました、合計回数：1、勝利回数：1、エラー：0", false, "JA Challenge prefix"},
 	}
 
 	for _, tt := range tests {
@@ -94,7 +94,7 @@ func TestIsValidSource_Korean(t *testing.T) {
 		desc     string
 	}{
 		{"이름: 다이아(None) × 100", false, "KO Name prefix"},
-		{"도전 무한의 탑 800", false, "KO Challenge prefix"},
+		{"무한의 탑 800 층에 도전 1회: 승리, 총 시도 횟수: 1, 승리 횟수: 1, 오류: 0", false, "KO Challenge prefix"},
 	}
 
 	for _, tt := range tests {

@@ -44,11 +44,11 @@ var languageDefinitions = map[Language]patternDefinition{
 		ChallengeKeyword: "Challenge",
 		SuccessKeyword:   "triumphed",
 		FailedKeyword:    "failed",
-		TowerInfinity:    "Infinity",
-		TowerAzure:       "Azure",
-		TowerCrimson:     "Crimson",
-		TowerEmerald:     "Emerald",
-		TowerAmber:       "Amber",
+		TowerInfinity:    "Tower of Infinity",
+		TowerAzure:       "Tower of Azure",
+		TowerCrimson:     "Tower of Crimson",
+		TowerEmerald:     "Tower of Emerald",
+		TowerAmber:       "Tower of Amber",
 	},
 	LangTw: {
 		NameLabel:        "名称",
@@ -113,6 +113,45 @@ func buildPatternSet(lang Language) *PatternSet {
 		regexp.QuoteMeta(def.TowerAmber),
 	)
 
+	// Challenge patterns differ by language:
+	// EN/TW: "Challenge/Tower tower 800 layer" (starts with keyword)
+	// JA/KO: "塔名 800 層に挑戦/층에 도전" (starts with tower name)
+	var challengeTower *regexp.Regexp
+	switch lang {
+	case LangJa, LangKo:
+		// JA: 無窮の塔 800 層に挑戦 1 回
+		// KO: 무한의 탑 800 층에 도전 1회
+		challengeTower = regexp.MustCompile(fmt.Sprintf(
+			`^(%s) (\d+)`,
+			towerPattern,
+		))
+	default:
+		// EN: Challenge Tower of Infinity 800 layer
+		// TW: 挑战 無窮之塔 800 层
+		challengeTower = regexp.MustCompile(fmt.Sprintf(
+			`^%s (%s) (\d+)`,
+			regexp.QuoteMeta(def.ChallengeKeyword),
+			towerPattern,
+		))
+	}
+
+	// Quest challenge patterns differ by language:
+	// EN/TW: "Challenge 36-13 boss one time"
+	// JA: "36-13 ボスに挑戦 1 回"
+	// KO: "36-13 보스에 도전 1회"
+	var challengeQuest *regexp.Regexp
+	switch lang {
+	case LangJa:
+		challengeQuest = regexp.MustCompile(`^(\d+-\d+) ボスに挑戦`)
+	case LangKo:
+		challengeQuest = regexp.MustCompile(`^(\d+-\d+) 보스에 도전`)
+	default:
+		challengeQuest = regexp.MustCompile(fmt.Sprintf(
+			`^%s (\d+-\d+) boss`,
+			regexp.QuoteMeta(def.ChallengeKeyword),
+		))
+	}
+
 	return &PatternSet{
 		// Item change patterns: Name: ItemName(Quality) × N
 		Diamond: regexp.MustCompile(fmt.Sprintf(
@@ -136,17 +175,8 @@ func buildPatternSet(lang Language) *PatternSet {
 		CaveFinish: regexp.MustCompile(regexp.QuoteMeta(def.CaveFinish)),
 
 		// Challenge patterns
-		// Quest: Challenge 36-13 boss (English) / 挑战 36-13 boss (Chinese)
-		ChallengeQuest: regexp.MustCompile(fmt.Sprintf(
-			`^%s (\d+-\d+) boss`,
-			regexp.QuoteMeta(def.ChallengeKeyword),
-		)),
-		// Tower: Challenge Tower of Crimson 800 layer (English) / 挑战 業紅之塔 800 层一次 (Chinese)
-		ChallengeTower: regexp.MustCompile(fmt.Sprintf(
-			`^%s (%s) (\d+)`,
-			regexp.QuoteMeta(def.ChallengeKeyword),
-			towerPattern,
-		)),
+		ChallengeQuest:   challengeQuest,
+		ChallengeTower:   challengeTower,
 		ChallengeSuccess: regexp.MustCompile(regexp.QuoteMeta(def.SuccessKeyword)),
 		ChallengeFailed:  regexp.MustCompile(regexp.QuoteMeta(def.FailedKeyword)),
 	}

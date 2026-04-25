@@ -3,6 +3,7 @@ package i18n
 
 import (
 	"regexp"
+	"strings"
 )
 
 // Language represents a supported language for log parsing.
@@ -91,12 +92,16 @@ func (m *Manager) IsNameLabelLine(body string) bool {
 	return len(body) >= len(prefix) && body[:len(prefix)] == prefix
 }
 
-// IsChallengeLine checks if the body is a challenge log (starts with Challenge keyword).
+// IsChallengeLine checks if the body is a challenge log.
 // Challenge logs cannot be used as source context.
+// Uses ChallengeKeyword which appears in all challenge logs:
+// - EN: "Challenge Tower of Infinity..."
+// - TW: "挑战 業紅之塔..."
+// - JA: "無窮の塔 800 層に挑戦..."
+// - KO: "무한의 탑 800 층에 도전..."
 func (m *Manager) IsChallengeLine(body string) bool {
 	def := languageDefinitions[m.currentLang]
-	prefix := def.ChallengeKeyword + " "
-	return len(body) >= len(prefix) && body[:len(prefix)] == prefix
+	return strings.Contains(body, def.ChallengeKeyword)
 }
 
 // GetVictoryPhrases returns all victory phrases in all languages.

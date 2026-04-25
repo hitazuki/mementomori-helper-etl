@@ -31,13 +31,12 @@ func buildDetectorSignatures() map[Language][]*regexp.Regexp {
 			// Cave patterns
 			regexp.MustCompile(regexp.QuoteMeta(def.CaveEnter)),
 			regexp.MustCompile(regexp.QuoteMeta(def.CaveFinish)),
-			// Challenge keyword (language-specific prefix)
-			regexp.MustCompile(fmt.Sprintf(`^%s `, regexp.QuoteMeta(def.ChallengeKeyword))),
-			// Challenge result keywords
+			// Challenge result keywords (appears in all challenge logs)
 			regexp.MustCompile(fmt.Sprintf(`%s|%s`, regexp.QuoteMeta(def.SuccessKeyword), regexp.QuoteMeta(def.FailedKeyword))),
 		}
 
-		// Tower names pattern (language-specific)
+		// Tower names pattern (language-specific, appears in challenge logs)
+		// Note: JA/KO challenge logs start with tower name, not "Challenge" keyword
 		towerPattern := fmt.Sprintf(`%s|%s|%s|%s|%s`,
 			regexp.QuoteMeta(def.TowerInfinity),
 			regexp.QuoteMeta(def.TowerAzure),

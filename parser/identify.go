@@ -35,8 +35,9 @@ func IdentifyLogType(body string) LogType {
 	}
 
 	// 检查挑战记录
-	// 支持 "Challenge" (英文) 和 "挑战" (中文) 等多语言前缀
-	// 通过正则匹配来判断，而不是字符串前缀
+	// 必须同时匹配：挑战模式（塔/任务）+ 结果关键词（成功/失败）
+	// EN/TW: 以 Challenge/挑战 开头
+	// JA/KO: 包含 挑戦/도전 关键词
 	if types.ChallengeQuestRegex().MatchString(body) || types.ChallengeTowerRegex().MatchString(body) {
 		if types.ChallengeSuccessRegex().MatchString(body) || types.ChallengeFailedRegex().MatchString(body) {
 			return LogTypeChallenge
