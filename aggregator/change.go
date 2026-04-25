@@ -59,6 +59,34 @@ func (a *ChangeAggregator) AddRecord(record types.ChangeRecord) {
 	a.recordCount++
 }
 
+// getSourceKey 计算聚合 key：source_id 非 0 且非 Gacha/Open 时按 ID 聚合
+func getSourceKey(record types.ChangeRecord) string {
+	if record.SourceID != 0 && record.SourceID != int(i18n.SourceIDGacha) && record.SourceID != int(i18n.SourceIDOpen) {
+		return fmt.Sprintf("id:%d", record.SourceID)
+	}
+	return record.Source
+}
+
+// updateChangeStats 更新 ChangeStats 结构（通用方法）
+func updateChangeStats(stats *types.ChangeStats, record types.ChangeRecord) {
+	sourceKey := getSourceKey(record)
+
+	if record.Amount > 0 {
+		stats.Gain += record.Amount
+		src := stats.Sources[sourceKey]
+		src.SourceID = record.SourceID
+		src.Gain += record.Amount
+		stats.Sources[sourceKey] = src
+	} else {
+		stats.Consume += -record.Amount
+		src := stats.Sources[sourceKey]
+		src.SourceID = record.SourceID
+		src.Consume += -record.Amount
+		stats.Sources[sourceKey] = src
+	}
+	stats.NetChange = stats.Gain - stats.Consume
+}
+
 func (a *ChangeAggregator) updateDaily(character, date string, record types.ChangeRecord) {
 	if a.dailyStats[character][date] == nil {
 		a.dailyStats[character][date] = &types.DailyStats{
@@ -66,30 +94,7 @@ func (a *ChangeAggregator) updateDaily(character, date string, record types.Chan
 			ChangeStats: types.ChangeStats{Sources: make(map[string]types.SourceStats)},
 		}
 	}
-	ds := a.dailyStats[character][date]
-
-	// 聚合 key 策略：source_id 非 0 且非 Gacha/Open 时按 ID 聚合
-	var sourceKey string
-	if record.SourceID != 0 && record.SourceID != int(i18n.SourceIDGacha) && record.SourceID != int(i18n.SourceIDOpen) {
-		sourceKey = fmt.Sprintf("id:%d", record.SourceID)
-	} else {
-		sourceKey = record.Source
-	}
-
-	if record.Amount > 0 {
-		ds.Gain += record.Amount
-		src := ds.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Gain += record.Amount
-		ds.Sources[sourceKey] = src
-	} else {
-		ds.Consume += -record.Amount
-		src := ds.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Consume += -record.Amount
-		ds.Sources[sourceKey] = src
-	}
-	ds.NetChange = ds.Gain - ds.Consume
+	updateChangeStats(&a.dailyStats[character][date].ChangeStats, record)
 }
 
 func (a *ChangeAggregator) updateWeekly(character, week string, record types.ChangeRecord) {
@@ -99,30 +104,7 @@ func (a *ChangeAggregator) updateWeekly(character, week string, record types.Cha
 			ChangeStats: types.ChangeStats{Sources: make(map[string]types.SourceStats)},
 		}
 	}
-	ws := a.weeklyStats[character][week]
-
-	// 聚合 key 策略
-	var sourceKey string
-	if record.SourceID != 0 && record.SourceID != int(i18n.SourceIDGacha) && record.SourceID != int(i18n.SourceIDOpen) {
-		sourceKey = fmt.Sprintf("id:%d", record.SourceID)
-	} else {
-		sourceKey = record.Source
-	}
-
-	if record.Amount > 0 {
-		ws.Gain += record.Amount
-		src := ws.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Gain += record.Amount
-		ws.Sources[sourceKey] = src
-	} else {
-		ws.Consume += -record.Amount
-		src := ws.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Consume += -record.Amount
-		ws.Sources[sourceKey] = src
-	}
-	ws.NetChange = ws.Gain - ws.Consume
+	updateChangeStats(&a.weeklyStats[character][week].ChangeStats, record)
 }
 
 func (a *ChangeAggregator) updateMonthly(character, month string, record types.ChangeRecord) {
@@ -132,57 +114,14 @@ func (a *ChangeAggregator) updateMonthly(character, month string, record types.C
 			ChangeStats: types.ChangeStats{Sources: make(map[string]types.SourceStats)},
 		}
 	}
-	ms := a.monthlyStats[character][month]
-
-	// 聚合 key 策略
-	var sourceKey string
-	if record.SourceID != 0 && record.SourceID != int(i18n.SourceIDGacha) && record.SourceID != int(i18n.SourceIDOpen) {
-		sourceKey = fmt.Sprintf("id:%d", record.SourceID)
-	} else {
-		sourceKey = record.Source
-	}
-
-	if record.Amount > 0 {
-		ms.Gain += record.Amount
-		src := ms.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Gain += record.Amount
-		ms.Sources[sourceKey] = src
-	} else {
-		ms.Consume += -record.Amount
-		src := ms.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Consume += -record.Amount
-		ms.Sources[sourceKey] = src
-	}
-	ms.NetChange = ms.Gain - ms.Consume
+	updateChangeStats(&a.monthlyStats[character][month].ChangeStats, record)
 }
 
 func (a *ChangeAggregator) updateTotal(character string, record types.ChangeRecord) {
-	ts := a.totalStats[character]
-
-	// 聚合 key 策略
-	var sourceKey string
-	if record.SourceID != 0 && record.SourceID != int(i18n.SourceIDGacha) && record.SourceID != int(i18n.SourceIDOpen) {
-		sourceKey = fmt.Sprintf("id:%d", record.SourceID)
-	} else {
-		sourceKey = record.Source
+	if a.totalStats[character].Sources == nil {
+		a.totalStats[character].Sources = make(map[string]types.SourceStats)
 	}
-
-	if record.Amount > 0 {
-		ts.Gain += record.Amount
-		src := ts.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Gain += record.Amount
-		ts.Sources[sourceKey] = src
-	} else {
-		ts.Consume += -record.Amount
-		src := ts.Sources[sourceKey]
-		src.SourceID = record.SourceID
-		src.Consume += -record.Amount
-		ts.Sources[sourceKey] = src
-	}
-	ts.NetChange = ts.Gain - ts.Consume
+	updateChangeStats(&a.totalStats[character].ChangeStats, record)
 }
 
 // LoadExistingStats 加载已有数据
