@@ -120,15 +120,47 @@ func (p *LogProcessor) Process(
 			}
 		}
 
-		// Update source context
-		if parser.IsValidSource(parsed.Body) {
-			lastSourceByCharacter[parsed.Character] = parsed.Body
-		} else if parser.ShouldClearSource(parsed.Body) {
-			delete(lastSourceByCharacter, parsed.Character)
-		}
+		// Step 1: Identify log type first
+		logType := parser.IdentifyLogType(parsed.Body)
 
-		// Dispatch by log type
-		p.processLogType(parsed, lastSourceByCharacter, diamondAgg, caveAgg, challengeAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount, &lastLogTime)
+		// Step 2: Process based on log type
+		switch logType {
+		case parser.LogTypeDiamond, parser.LogTypeRuneTicket, parser.LogTypeUpgradePanacea:
+			// Item change records need source context
+			source := lastSourceByCharacter[parsed.Character]
+			if source == "" {
+				source = "none"
+			}
+			p.processItemChange(parsed, logType, source, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount, &lastLogTime)
+
+		case parser.LogTypeCave:
+			// Cave logs can be source context
+			lastSourceByCharacter[parsed.Character] = parsed.Body
+			caveRecord := parser.ExtractCaveRecord(parsed)
+			if caveRecord != nil {
+				caveAgg.AddRecord(*caveRecord)
+			}
+
+		case parser.LogTypeChallenge:
+			challengeRecord := parser.ExtractChallengeRecord(parsed)
+			if challengeRecord != nil {
+				challengeAgg.AddRecord(*challengeRecord)
+			}
+
+		case parser.LogTypeGacha, parser.LogTypeOpen:
+			// Gacha/Open logs are valid source context
+			// Clean quantity suffix when storing (e.g., "Gacha test 5 times" -> "Gacha test")
+			cleanSource := parser.CleanSourceSuffix(parsed.Body, logType)
+			lastSourceByCharacter[parsed.Character] = cleanSource
+
+		case parser.LogTypeSystemError:
+			// System/error logs clear source context
+			delete(lastSourceByCharacter, parsed.Character)
+
+		case parser.LogTypeNone:
+			// Unknown type - still valid as source context
+			lastSourceByCharacter[parsed.Character] = parsed.Body
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -167,73 +199,42 @@ func (p *LogProcessor) checkLanguageSwitch(scoreAccumulator *i18n.ScoreAccumulat
 	}
 }
 
-// processLogType processes a single log line based on its type.
-func (p *LogProcessor) processLogType(
+// processItemChange handles item change records (diamond, rune ticket, upgrade panacea).
+func (p *LogProcessor) processItemChange(
 	parsed parser.ParsedLog,
-	lastSourceByCharacter map[string]string,
+	logType parser.LogType,
+	source string,
 	diamondAgg *aggregator.ChangeAggregator,
-	caveAgg *aggregator.CaveAggregator,
-	challengeAgg *aggregator.ChallengeAggregator,
 	runeTicketAgg *aggregator.ChangeAggregator,
 	upgradePanaceaAgg *aggregator.ChangeAggregator,
 	recordsWriter *storage.RecordsWriter,
 	newRecordCount *int,
 	lastLogTime *string,
 ) {
-	logType := parser.IdentifyLogType(parsed.Body)
+	record := parser.ExtractChangeRecord(parsed, source, logType)
+	if record == nil {
+		return
+	}
 
 	switch logType {
 	case parser.LogTypeDiamond:
-		source := lastSourceByCharacter[parsed.Character]
-		if source == "" {
-			source = "none"
+		diamondAgg.AddRecord(*record)
+		if recordsWriter != nil {
+			recordsWriter.AppendRecord("diamond", *record)
 		}
-		record := parser.ExtractChangeRecord(parsed, source, logType)
-		if record != nil {
-			diamondAgg.AddRecord(*record)
-			if recordsWriter != nil {
-				recordsWriter.AppendRecord("diamond", *record)
-			}
-			*newRecordCount++
-			*lastLogTime = record.Timestamp
-		}
-
-	case parser.LogTypeCave:
-		caveRecord := parser.ExtractCaveRecord(parsed)
-		if caveRecord != nil {
-			caveAgg.AddRecord(*caveRecord)
-		}
-
-	case parser.LogTypeChallenge:
-		challengeRecord := parser.ExtractChallengeRecord(parsed)
-		if challengeRecord != nil {
-			challengeAgg.AddRecord(*challengeRecord)
-		}
+		*newRecordCount++
+		*lastLogTime = record.Timestamp
 
 	case parser.LogTypeRuneTicket:
-		source := lastSourceByCharacter[parsed.Character]
-		if source == "" {
-			source = "none"
-		}
-		record := parser.ExtractChangeRecord(parsed, source, logType)
-		if record != nil {
-			runeTicketAgg.AddRecord(*record)
-			if recordsWriter != nil {
-				recordsWriter.AppendRecord("rune_ticket", *record)
-			}
+		runeTicketAgg.AddRecord(*record)
+		if recordsWriter != nil {
+			recordsWriter.AppendRecord("rune_ticket", *record)
 		}
 
 	case parser.LogTypeUpgradePanacea:
-		source := lastSourceByCharacter[parsed.Character]
-		if source == "" {
-			source = "none"
-		}
-		record := parser.ExtractChangeRecord(parsed, source, logType)
-		if record != nil {
-			upgradePanaceaAgg.AddRecord(*record)
-			if recordsWriter != nil {
-				recordsWriter.AppendRecord("upgrade_panacea", *record)
-			}
+		upgradePanaceaAgg.AddRecord(*record)
+		if recordsWriter != nil {
+			recordsWriter.AppendRecord("upgrade_panacea", *record)
 		}
 	}
 }

@@ -30,6 +30,10 @@ type patternDefinition struct {
 	TowerCrimson  string
 	TowerEmerald  string
 	TowerAmber    string
+
+	// Source context patterns
+	GachaPrefix string // Gacha prefix (e.g., "Gacha " in English)
+	OpenPrefix  string // Open prefix (e.g., "Open " in English)
 }
 
 // languageDefinitions maps languages to their pattern definitions.
@@ -49,6 +53,8 @@ var languageDefinitions = map[Language]patternDefinition{
 		TowerCrimson:     "Tower of Crimson",
 		TowerEmerald:     "Tower of Emerald",
 		TowerAmber:       "Tower of Amber",
+		GachaPrefix:      "Gacha ",
+		OpenPrefix:       "Open ",
 	},
 	LangTw: {
 		NameLabel:        "名称",
@@ -65,6 +71,8 @@ var languageDefinitions = map[Language]patternDefinition{
 		TowerCrimson:     "業紅之塔",
 		TowerEmerald:     "蒼翠之塔",
 		TowerAmber:       "流金之塔",
+		GachaPrefix:      "抽卡 ",
+		OpenPrefix:       "開啟 ",
 	},
 	LangJa: {
 		NameLabel:        "名前",
@@ -81,6 +89,8 @@ var languageDefinitions = map[Language]patternDefinition{
 		TowerCrimson:     "紅の塔",
 		TowerEmerald:     "翠の塔",
 		TowerAmber:       "黄の塔",
+		GachaPrefix:      "ガチャ ",
+		OpenPrefix:       "開く ",
 	},
 	LangKo: {
 		NameLabel:        "이름",
@@ -97,6 +107,8 @@ var languageDefinitions = map[Language]patternDefinition{
 		TowerCrimson:     "홍염의 탑",
 		TowerEmerald:     "비취의 탑",
 		TowerAmber:       "황철의 탑",
+		GachaPrefix:      "가챠 ",
+		OpenPrefix:       "열기 ",
 	},
 }
 
@@ -179,6 +191,10 @@ func buildPatternSet(lang Language) *PatternSet {
 		ChallengeTower:   challengeTower,
 		ChallengeSuccess: regexp.MustCompile(regexp.QuoteMeta(def.SuccessKeyword)),
 		ChallengeFailed:  regexp.MustCompile(regexp.QuoteMeta(def.FailedKeyword)),
+
+		// Source context patterns
+		GachaPrefix: regexp.MustCompile(`^` + regexp.QuoteMeta(def.GachaPrefix)),
+		OpenPrefix:  regexp.MustCompile(`^` + regexp.QuoteMeta(def.OpenPrefix)),
 	}
 }
 

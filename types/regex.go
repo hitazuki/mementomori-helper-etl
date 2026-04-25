@@ -73,3 +73,16 @@ func ChallengeSuccessRegex() *regexp.Regexp {
 func ChallengeFailedRegex() *regexp.Regexp {
 	return GetI18nManager().CurrentPatterns().ChallengeFailed
 }
+
+// GachaPrefixRegex returns the gacha prefix pattern for the current language.
+func GachaPrefixRegex() *regexp.Regexp {
+	return GetI18nManager().CurrentPatterns().GachaPrefix
+}
+
+// OpenPrefixRegex returns the open prefix pattern for the current language.
+func OpenPrefixRegex() *regexp.Regexp {
+	return GetI18nManager().CurrentPatterns().OpenPrefix
+}
+
+// SystemErrorRegex matches system/error logs that should clear source context.
+var SystemErrorRegex = regexp.MustCompile(`^(OnError|System\.)`)

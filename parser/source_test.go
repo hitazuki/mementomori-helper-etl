@@ -6,107 +6,6 @@ import (
 	"testing"
 )
 
-func TestIsValidSource_English(t *testing.T) {
-	mgr := i18n.NewManager()
-	mgr.SetLanguage(i18n.LangEn)
-	types.InitI18n(mgr)
-
-	tests := []struct {
-		body     string
-		expected bool
-		desc     string
-	}{
-		{"Name: Diamonds(None) × 100", false, "EN Name prefix"},
-		{"Challenge Tower of Infinity 800 layer one time：You have triumphed.,  total：1, Success：1, Err: 0", false, "EN Challenge prefix"},
-		{"Gacha 10 times", true, "EN Gacha is valid source"},
-		{"Open Box x 5", true, "EN Open is valid source"},
-		{"OnError: something went wrong", false, "OnError prefix"},
-		{"Enter Cave of Space-Time", true, "Cave enter is valid source"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			result := IsValidSource(tt.body)
-			if result != tt.expected {
-				t.Errorf("IsValidSource(%q) = %v, want %v", tt.body, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestIsValidSource_TraditionalChinese(t *testing.T) {
-	mgr := i18n.NewManager()
-	mgr.SetLanguage(i18n.LangTw)
-	types.InitI18n(mgr)
-
-	tests := []struct {
-		body     string
-		expected bool
-		desc     string
-	}{
-		{"名称: 鑽石(None) × 100", false, "TW Name prefix"},
-		{"挑战 業紅之塔 800 层一次: 勝利", false, "TW Challenge prefix"},
-		{"進入 時空洞窟", true, "TW Cave enter is valid source"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			result := IsValidSource(tt.body)
-			if result != tt.expected {
-				t.Errorf("IsValidSource(%q) = %v, want %v", tt.body, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestIsValidSource_Japanese(t *testing.T) {
-	mgr := i18n.NewManager()
-	mgr.SetLanguage(i18n.LangJa)
-	types.InitI18n(mgr)
-
-	tests := []struct {
-		body     string
-		expected bool
-		desc     string
-	}{
-		{"名前: ダイヤ(None) × 100", false, "JA Name prefix"},
-		{"挑戦 無窮の塔 800 層に挑戦 1 回：勝利しました、合計回数：1、勝利回数：1、エラー：0", false, "JA Challenge prefix"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			result := IsValidSource(tt.body)
-			if result != tt.expected {
-				t.Errorf("IsValidSource(%q) = %v, want %v", tt.body, result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestIsValidSource_Korean(t *testing.T) {
-	mgr := i18n.NewManager()
-	mgr.SetLanguage(i18n.LangKo)
-	types.InitI18n(mgr)
-
-	tests := []struct {
-		body     string
-		expected bool
-		desc     string
-	}{
-		{"이름: 다이아(None) × 100", false, "KO Name prefix"},
-		{"무한의 탑 800 층에 도전 1회: 승리, 총 시도 횟수: 1, 승리 횟수: 1, 오류: 0", false, "KO Challenge prefix"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.desc, func(t *testing.T) {
-			result := IsValidSource(tt.body)
-			if result != tt.expected {
-				t.Errorf("IsValidSource(%q) = %v, want %v", tt.body, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestGetSourceID_English(t *testing.T) {
 	mgr := i18n.NewManager()
 	mgr.SetLanguage(i18n.LangEn)
@@ -304,6 +203,40 @@ func TestMapSourceWithID_Chinese(t *testing.T) {
 			_, sourceID := MapSourceWithID(tt.source)
 			if sourceID != tt.expectedID {
 				t.Errorf("MapSourceWithID(%q) sourceID = %d, want %d", tt.source, sourceID, tt.expectedID)
+			}
+		})
+	}
+}
+
+func TestCleanSourceSuffix(t *testing.T) {
+	tests := []struct {
+		body     string
+		logType  LogType
+		expected string
+		desc     string
+	}{
+		// Gacha
+		{"Gacha test pool 10 times", LogTypeGacha, "Gacha test pool", "EN Gacha with count"},
+		{"Gacha pool", LogTypeGacha, "Gacha pool", "EN Gacha no count"},
+		{"抽卡 測試卡池 10 次", LogTypeGacha, "抽卡 測試卡池", "TW Gacha with count"},
+		{"ガチャ テスト 5 回", LogTypeGacha, "ガチャ テスト", "JA Gacha with count"},
+
+		// Open
+		{"Open Gold Chest x 5", LogTypeOpen, "Open Gold Chest", "EN Open with count"},
+		{"Open Box", LogTypeOpen, "Open Box", "EN Open no count"},
+		{"開啟 上級封印寶箱 x 5", LogTypeOpen, "開啟 上級封印寶箱", "TW Open with count"},
+		{"開く 宝箱 x 10", LogTypeOpen, "開く 宝箱", "JA Open with count"},
+
+		// Other types - no change
+		{"Some other log", LogTypeNone, "Some other log", "None type unchanged"},
+		{"Login bonus", LogTypeDiamond, "Login bonus", "Diamond type unchanged"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			result := CleanSourceSuffix(tt.body, tt.logType)
+			if result != tt.expected {
+				t.Errorf("CleanSourceSuffix(%q, %v) = %q, want %q", tt.body, tt.logType, result, tt.expected)
 			}
 		})
 	}

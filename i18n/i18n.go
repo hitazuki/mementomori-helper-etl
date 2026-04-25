@@ -3,7 +3,6 @@ package i18n
 
 import (
 	"regexp"
-	"strings"
 )
 
 // Language represents a supported language for log parsing.
@@ -36,6 +35,10 @@ type PatternSet struct {
 	ChallengeTower   *regexp.Regexp
 	ChallengeSuccess *regexp.Regexp
 	ChallengeFailed  *regexp.Regexp
+
+	// Source context patterns
+	GachaPrefix *regexp.Regexp // Gacha prefix for source
+	OpenPrefix  *regexp.Regexp // Open prefix for source
 }
 
 // Manager manages multi-language patterns for log parsing.
@@ -84,26 +87,6 @@ func (m *Manager) GetPatterns(lang Language) *PatternSet {
 	return m.patterns[LangEn]
 }
 
-// IsNameLabelLine checks if the body is an item change log (starts with Name: label).
-// Item change logs cannot be used as source context.
-func (m *Manager) IsNameLabelLine(body string) bool {
-	def := languageDefinitions[m.currentLang]
-	prefix := def.NameLabel + ":"
-	return len(body) >= len(prefix) && body[:len(prefix)] == prefix
-}
-
-// IsChallengeLine checks if the body is a challenge log.
-// Challenge logs cannot be used as source context.
-// Uses ChallengeKeyword which appears in all challenge logs:
-// - EN: "Challenge Tower of Infinity..."
-// - TW: "挑战 業紅之塔..."
-// - JA: "無窮の塔 800 層に挑戦..."
-// - KO: "무한의 탑 800 층에 도전..."
-func (m *Manager) IsChallengeLine(body string) bool {
-	def := languageDefinitions[m.currentLang]
-	return strings.Contains(body, def.ChallengeKeyword)
-}
-
 // GetVictoryPhrases returns all victory phrases in all languages.
 // Used for source mapping (e.g., "You have triumphed." in English).
 func (m *Manager) GetVictoryPhrases() map[string]string {
@@ -113,32 +96,4 @@ func (m *Manager) GetVictoryPhrases() map[string]string {
 		result[def.SuccessKeyword] = def.SuccessKeyword
 	}
 	return result
-}
-
-// GetCurrentGachaPrefix returns the Gacha prefix for the current language.
-func (m *Manager) GetCurrentGachaPrefix() string {
-	prefixes := map[Language]string{
-		LangEn: "Gacha ",
-		LangTw: "抽卡 ",
-		LangJa: "ガチャ ",
-		LangKo: "가챠 ",
-	}
-	if prefix, ok := prefixes[m.currentLang]; ok {
-		return prefix
-	}
-	return "Gacha "
-}
-
-// GetCurrentOpenPrefix returns the Open prefix for the current language.
-func (m *Manager) GetCurrentOpenPrefix() string {
-	prefixes := map[Language]string{
-		LangEn: "Open ",
-		LangTw: "開啟 ",
-		LangJa: "開く ",
-		LangKo: "열기 ",
-	}
-	if prefix, ok := prefixes[m.currentLang]; ok {
-		return prefix
-	}
-	return "Open "
 }

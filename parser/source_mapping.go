@@ -3,6 +3,7 @@ package parser
 import (
 	"mmth-etl/i18n"
 	"mmth-etl/types"
+	"regexp"
 	"strings"
 )
 
@@ -90,15 +91,17 @@ func GetSourceAlias(source string) string {
 }
 
 // MapSourceWithID maps source to alias and returns the source ID.
+// Note: Gacha/Open sources should already be cleaned (quantity suffix removed)
+// before calling this function (see CleanSourceSuffix).
 func MapSourceWithID(source string) (alias string, sourceID i18n.SourceID) {
-	// Gacha: extract gacha name
-	if gachaAlias, ok := extractGacha(source); ok {
-		return gachaAlias, i18n.SourceIDGacha
+	// Gacha: check prefix (source already cleaned)
+	if types.GachaPrefixRegex().MatchString(source) {
+		return source, i18n.SourceIDGacha
 	}
 
-	// Open: extract item name
-	if openAlias, ok := extractOpen(source); ok {
-		return openAlias, i18n.SourceIDOpen
+	// Open: check prefix (source already cleaned)
+	if types.OpenPrefixRegex().MatchString(source) {
+		return source, i18n.SourceIDOpen
 	}
 
 	// Check mapping table
@@ -109,53 +112,36 @@ func MapSourceWithID(source string) (alias string, sourceID i18n.SourceID) {
 	return source, 0
 }
 
-// extractGacha extracts gacha name if source is a gacha log.
-// Returns "Gacha <name>" format, with quantity suffix removed.
-// Pattern: "抽卡 <name> <count> 次" -> "抽卡 <name>"
-// Cuts at the second space in the full string (first space is after prefix).
-func extractGacha(source string) (string, bool) {
-	mgr := types.GetI18nManager()
-	prefix := mgr.GetCurrentGachaPrefix()
-
-	if strings.HasPrefix(source, prefix) {
-		// Count spaces in full string, cut at second space
-		// "抽卡 黒葬武具ガチャ 5 次" -> second space is before "5"
-		spaceCount := 0
-		for i, r := range source {
-			if r == ' ' {
-				spaceCount++
-				if spaceCount == 2 {
-					return strings.TrimSpace(source[:i]), true
-				}
-			}
-		}
-		// No second space found, return full source
-		return strings.TrimSpace(source), true
-	}
-	return "", false
-}
-
-// extractOpen extracts item name if source is an open log.
-// Returns "Open <name>" format, with quantity suffix removed.
-// Pattern: "開啟 <name> x 5" -> "開啟 <name>"
-// Cuts at " x" pattern.
-func extractOpen(source string) (string, bool) {
-	mgr := types.GetI18nManager()
-	prefix := mgr.GetCurrentOpenPrefix()
-
-	if strings.HasPrefix(source, prefix) {
-		content := source[len(prefix):]
-		// Find " x" to cut before the quantity
-		// "上級封印寶箱 x 5" -> "上級封印寶箱"
-		if idx := strings.Index(content, " x"); idx != -1 {
-			return prefix + strings.TrimSpace(content[:idx]), true
-		}
-		return prefix + strings.TrimSpace(content), true
-	}
-	return "", false
-}
-
 // InvalidateSourceCache clears the source cache.
 func InvalidateSourceCache() {
 	currentCache = nil
+}
+
+// gachaCountPattern matches gacha count suffix: " <count> times/次/回/회"
+var gachaCountPattern = regexp.MustCompile(` \d+ (times|次|回|회)`)
+
+// CleanSourceSuffix removes quantity suffix from source based on log type.
+// This is used when storing source context, avoiding redundant prefix matching.
+// For LogTypeGacha: cuts at " <count> times/次/回/회" pattern
+// For LogTypeOpen: cuts at " x" pattern (e.g., "Open Box x 5" -> "Open Box")
+// For other types: returns original body
+func CleanSourceSuffix(body string, logType LogType) string {
+	switch logType {
+	case LogTypeGacha:
+		// Find " <count> times/次/回/회" pattern and cut before it
+		if idx := gachaCountPattern.FindStringIndex(body); idx != nil {
+			return strings.TrimSpace(body[:idx[0]])
+		}
+		return strings.TrimSpace(body)
+
+	case LogTypeOpen:
+		// Cut at " x" pattern
+		if idx := strings.Index(body, " x"); idx != -1 {
+			return strings.TrimSpace(body[:idx])
+		}
+		return strings.TrimSpace(body)
+
+	default:
+		return body
+	}
 }

@@ -14,6 +14,9 @@ const (
 	LogTypeChallenge                     // 挑战记录
 	LogTypeRuneTicket                    // 饼干记录
 	LogTypeUpgradePanacea                // 红水记录
+	LogTypeGacha                         // 抽卡来源
+	LogTypeOpen                          // 开启来源
+	LogTypeSystemError                   // 系统/错误日志（清空来源上下文）
 )
 
 // IdentifyLogType 识别日志类型（一次扫描确定类型）
@@ -42,6 +45,19 @@ func IdentifyLogType(body string) LogType {
 		if types.ChallengeSuccessRegex().MatchString(body) || types.ChallengeFailedRegex().MatchString(body) {
 			return LogTypeChallenge
 		}
+	}
+
+	// 检查系统/错误日志（清空来源上下文）
+	if types.SystemErrorRegex.MatchString(body) {
+		return LogTypeSystemError
+	}
+
+	// 检查来源上下文日志
+	if types.GachaPrefixRegex().MatchString(body) {
+		return LogTypeGacha
+	}
+	if types.OpenPrefixRegex().MatchString(body) {
+		return LogTypeOpen
 	}
 
 	return LogTypeNone

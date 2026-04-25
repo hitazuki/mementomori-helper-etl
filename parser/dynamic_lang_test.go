@@ -54,23 +54,28 @@ func TestDynamicLanguageSwitch(t *testing.T) {
 		}
 	})
 
-	// Test 4: IsValidSource should respect current language
-	t.Run("IsValidSource_Respects_Language", func(t *testing.T) {
-		// English mode - English "Name:" should be invalid (filtered)
+	// Test 4: IdentifyLogType should correctly identify Gacha/Open in different languages
+	t.Run("IdentifyLogType_Respects_Language", func(t *testing.T) {
+		// English mode - English "Gacha " should be identified
 		mgr.SetLanguage(i18n.LangEn)
-		if IsValidSource("Name: Diamonds(None) x 100") {
-			t.Error("English Name: should be invalid in English mode")
+		if IdentifyLogType("Gacha test 10 times") != LogTypeGacha {
+			t.Error("English Gacha should be identified in English mode")
 		}
 
-		// Chinese mode - English "Name:" should be valid (not filtered, only 名称: is)
+		// Chinese mode - Chinese "抽卡 " should be identified
 		mgr.SetLanguage(i18n.LangTw)
-		if !IsValidSource("Name: Diamonds(None) x 100") {
-			t.Error("English Name: should be valid in Chinese mode")
+		if IdentifyLogType("抽卡 測試卡池 10 次") != LogTypeGacha {
+			t.Error("Chinese 抽卡 should be identified in Chinese mode")
 		}
 
-		// Chinese mode - Chinese "名称:" should be invalid
-		if IsValidSource("名称: 鑽石(None) x 100") {
-			t.Error("Chinese 名称: should be invalid in Chinese mode")
+		// Chinese mode - English "Gacha " should NOT be identified as Gacha
+		if IdentifyLogType("Gacha test 10 times") == LogTypeGacha {
+			t.Error("English Gacha should NOT be identified as Gacha in Chinese mode")
+		}
+
+		// System error should clear source context
+		if IdentifyLogType("OnError: something went wrong") != LogTypeSystemError {
+			t.Error("OnError should be identified as LogTypeSystemError")
 		}
 	})
 

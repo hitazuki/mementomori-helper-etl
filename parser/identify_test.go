@@ -37,11 +37,20 @@ func TestIdentifyLogType_English(t *testing.T) {
 		{"Challenge Tower of Infinity 800 layer one time：You have triumphed.,  total：1, Success：1, Err: 0", LogTypeChallenge, "EN Tower challenge success"},
 		{"Challenge Tower of Crimson 801 layer one time：You have failed.,  total：1, Success：0, Err: 0", LogTypeChallenge, "EN Tower challenge failed"},
 
+		// Gacha
+		{"Gacha 10 times", LogTypeGacha, "EN Gacha source"},
+		{"Gacha test pool 10 times", LogTypeGacha, "EN Gacha with pool name"},
+
+		// Open
+		{"Open Box x 5", LogTypeOpen, "EN Open source"},
+		{"Open Gold Sealed Chest x 5", LogTypeOpen, "EN Open with item name"},
+
+		// SystemError
+		{"OnError: something went wrong", LogTypeSystemError, "EN OnError clears source"},
+		{"System.Exception: error", LogTypeSystemError, "EN System clears source"},
+
 		// None
 		{"Some random log message", LogTypeNone, "EN Unknown log"},
-		{"Gacha 10 times", LogTypeNone, "EN Gacha is not a log type"},
-		{"Open Box x 5", LogTypeNone, "EN Open is not a log type"},
-		{"OnError: something went wrong", LogTypeNone, "EN OnError is not a log type"},
 	}
 
 	for _, tt := range tests {
@@ -84,9 +93,12 @@ func TestIdentifyLogType_TraditionalChinese(t *testing.T) {
 		{"挑战 無窮之塔 800 层一次: 勝利,  0/10 ,总次数: 1, 胜利次数: 1, Err: 0", LogTypeChallenge, "TW Tower challenge success"},
 		{"挑战 業紅之塔 801 层一次: 敗北,  1/10 ,总次数: 2, 胜利次数: 1, Err: 0", LogTypeChallenge, "TW Tower challenge failed"},
 
-		// None
-		{"抽卡 測試卡池 10 次", LogTypeNone, "TW Gacha is not a log type"},
-		{"開啟 上級封印寶箱 x 5", LogTypeNone, "TW Open is not a log type"},
+		// Gacha
+		{"抽卡 測試卡池 10 次", LogTypeGacha, "TW Gacha source"},
+		{"抽卡 測試卡池 5 次, 消耗 金幣×250000", LogTypeGacha, "TW Gacha with cost"},
+
+		// Open
+		{"開啟 上級封印寶箱 x 5", LogTypeOpen, "TW Open source"},
 	}
 
 	for _, tt := range tests {
@@ -128,9 +140,11 @@ func TestIdentifyLogType_Japanese(t *testing.T) {
 		{"無窮の塔 800 層に挑戦 1 回：勝利しました、合計回数：1、勝利回数：1、エラー：0", LogTypeChallenge, "JA Tower challenge success"},
 		{"紅の塔 801 層に挑戦 1 回：敗北、合計回数：2、勝利回数：1、エラー：0", LogTypeChallenge, "JA Tower challenge failed"},
 
-		// None
-		{"ガチャ テストガチャ 10 回", LogTypeNone, "JA Gacha is not a log type"},
-		{"開く 上級封印宝箱 x 5", LogTypeNone, "JA Open is not a log type"},
+		// Gacha
+		{"ガチャ テストガチャ 10 回", LogTypeGacha, "JA Gacha source"},
+
+		// Open
+		{"開く 上級封印宝箱 x 5", LogTypeOpen, "JA Open source"},
 	}
 
 	for _, tt := range tests {
@@ -172,9 +186,11 @@ func TestIdentifyLogType_Korean(t *testing.T) {
 		{"무한의 탑 800 층에 도전 1회: 승리, 총 시도 횟수: 1, 승리 횟수: 1, 오류: 0", LogTypeChallenge, "KO Tower challenge success"},
 		{"홍염의 탑 801 층에 도전 1회: 패배, 총 시도 횟수: 2, 승리 횟수: 1, 오류: 0", LogTypeChallenge, "KO Tower challenge failed"},
 
-		// None
-		{"가챠 테스트가챠 10 회", LogTypeNone, "KO Gacha is not a log type"},
-		{"열기 상급봉인상자 x 5", LogTypeNone, "KO Open is not a log type"},
+		// Gacha
+		{"가챠 테스트가챠 10 회", LogTypeGacha, "KO Gacha source"},
+
+		// Open
+		{"열기 상급봉인상자 x 5", LogTypeOpen, "KO Open source"},
 	}
 
 	for _, tt := range tests {
