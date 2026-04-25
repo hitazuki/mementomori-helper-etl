@@ -150,24 +150,7 @@ go test ./... -v
 
 ### 多语言日志格式
 
-物品变动日志格式 `Name: ItemName(Quality) × N` 在各语言中的差异：
-
-| 语言 | Name 标签 | 钻石 | 饼干 | 红水 |
-| ------ | --------- | ------ | ------ | ------ |
-| 英文 | Name | Diamonds | Rune Ticket | Upgrade Panacea |
-| 繁中 | 名称 | 鑽石 | 符石兌換券 | 強化秘藥 |
-| 日文 | 名称 | ダイヤ | ルーンチケット | 強化秘薬 |
-| 韩文 | 이름 | 다이아 | 룬 티켓 | 강화의 비약 |
-
-**示例对比**：
-
-```text
-# 英文
-Name: Diamonds(None) × 100
-
-# 繁体中文
-名称: 鑽石(None) × 100
-```
+详见 [SOURCE_MAPPING.md](SOURCE_MAPPING.md)。
 
 ### 物品变动日志识别
 
@@ -208,13 +191,7 @@ Name: Diamonds(None) × 100
 
 ### 来源映射规则
 
-所有物品变动日志统一应用来源映射：
-
-| 原始日志 | 映射结果 | 说明 |
-| ---------- | ---------- | ------ |
-| `You have triumphed.` | `temple of illusions` | 幻想神殿通关 |
-| `Gacha ... N times, ...` | `Gacha ...` | 抽卡日志简化 |
-| `Open ... x N` | `Open ...` | 开箱日志简化 |
+详见 [SOURCE_MAPPING.md](SOURCE_MAPPING.md)。
 
 ## 动态语言检测
 
