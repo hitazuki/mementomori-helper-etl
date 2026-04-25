@@ -2,18 +2,12 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"mmth-etl/aggregator"
 	"mmth-etl/i18n"
 	"mmth-etl/parser"
 	"mmth-etl/storage"
-	"mmth-etl/types"
 	"os"
-	"regexp"
-	"strings"
 )
 
 // DynamicLanguageConfig holds configuration for dynamic language detection.
@@ -23,7 +17,7 @@ type DynamicLanguageConfig struct {
 	SwitchThreshold int  // Minimum score difference to trigger language switch
 }
 
-// LogProcessor 日志处理器
+// LogProcessor handles log file processing.
 type LogProcessor struct {
 	inputLogPath string
 	checkpoint   string
@@ -43,7 +37,7 @@ func NewLogProcessor(inputLogPath, checkpoint string, i18nMgr *i18n.Manager, dyn
 	}
 }
 
-// Process 流式处理日志
+// Process processes the log file and aggregates records.
 func (p *LogProcessor) Process(
 	diamondAgg *aggregator.ChangeAggregator,
 	caveAgg *aggregator.CaveAggregator,
@@ -73,10 +67,10 @@ func (p *LogProcessor) Process(
 		log.Fatalf("文件定位失败: %v", err)
 	}
 
-	// 来源上下文（按角色隔离）
+	// Source context per character
 	lastSourceByCharacter := make(map[string]string)
 
-	// 动态语言检测 - 使用增量累加器（优化：避免重复匹配）
+	// Dynamic language detection
 	windowSize := p.dynamicLang.WindowSize
 	if windowSize <= 0 {
 		windowSize = 100
@@ -90,7 +84,7 @@ func (p *LogProcessor) Process(
 		scoreAccumulator = i18n.NewScoreAccumulator(p.detector, windowSize)
 	}
 
-	// 分块读取
+	// Read with buffer
 	scanner := bufio.NewScanner(file)
 	buf := make([]byte, 0, 256*1024)
 	scanner.Buffer(buf, 1024*1024)
@@ -110,110 +104,31 @@ func (p *LogProcessor) Process(
 			continue
 		}
 
-		// 时间戳二次校验：跳过已处理的记录
-		// 使用 <= 跳过同秒记录，确保不重复计入
+		// Skip already processed records
 		if p.checkpoint != "" && parsed.Timestamp != "" {
 			if parsed.Timestamp <= p.checkpoint {
 				continue
 			}
 		}
 
-		// 动态语言检测 - 增量累加（优化：O(1)开销）
+		// Dynamic language detection
 		if p.dynamicLang.Enabled {
 			scoreAccumulator.AddLine(parsed.Body)
 
-			// 定期检查是否需要切换语言
 			if lineCount%checkInterval == 0 {
-				scores := scoreAccumulator.GetScores()
-				currentLang := p.i18nMgr.CurrentLanguage()
-
-				// 找出得分最高的语言
-				var maxLang i18n.Language
-				maxScore := 0
-				for lang, score := range scores {
-					if score > maxScore {
-						maxScore = score
-						maxLang = lang
-					}
-				}
-
-				// 如果检测到语言变化且差异超过阈值
-				if maxLang != "" && maxLang != currentLang {
-					currentScore := scores[currentLang]
-					if maxScore-currentScore >= switchThreshold {
-						p.i18nMgr.SetLanguage(maxLang)
-						languageSwitchCount++
-						log.Printf("语言切换: %s -> %s (得分: %d vs %d)", currentLang, maxLang, maxScore, currentScore)
-					}
-				}
+				p.checkLanguageSwitch(scoreAccumulator, switchThreshold, &languageSwitchCount)
 			}
 		}
 
-		// 更新来源上下文
+		// Update source context
 		if parser.IsValidSource(parsed.Body) {
 			lastSourceByCharacter[parsed.Character] = parsed.Body
 		} else if parser.ShouldClearSource(parsed.Body) {
-			// 系统日志等需要清空来源上下文
 			delete(lastSourceByCharacter, parsed.Character)
 		}
-		// Name/Challenge 日志保留当前来源（不清空）
 
-		// 识别日志类型并分发
-		logType := parser.IdentifyLogType(parsed.Body)
-		switch logType {
-		case parser.LogTypeDiamond:
-			source := lastSourceByCharacter[parsed.Character]
-			if source == "" {
-				source = "none"
-			}
-			record := parser.ExtractChangeRecord(parsed, source, logType)
-			if record != nil {
-				diamondAgg.AddRecord(*record)
-					if recordsWriter != nil {
-						recordsWriter.AppendRecord("diamond", *record)
-					}
-				newRecordCount++
-				lastLogTime = record.Timestamp
-			}
-
-		case parser.LogTypeCave:
-			caveRecord := parser.ExtractCaveRecord(parsed)
-			if caveRecord != nil {
-				caveAgg.AddRecord(*caveRecord)
-			}
-
-		case parser.LogTypeChallenge:
-			challengeRecord := parser.ExtractChallengeRecord(parsed)
-			if challengeRecord != nil {
-				challengeAgg.AddRecord(*challengeRecord)
-			}
-
-		case parser.LogTypeRuneTicket:
-			source := lastSourceByCharacter[parsed.Character]
-			if source == "" {
-				source = "none"
-			}
-			record := parser.ExtractChangeRecord(parsed, source, logType)
-			if record != nil {
-				runeTicketAgg.AddRecord(*record)
-					if recordsWriter != nil {
-						recordsWriter.AppendRecord("rune_ticket", *record)
-					}
-			}
-
-		case parser.LogTypeUpgradePanacea:
-			source := lastSourceByCharacter[parsed.Character]
-			if source == "" {
-				source = "none"
-			}
-			record := parser.ExtractChangeRecord(parsed, source, logType)
-			if record != nil {
-				upgradePanaceaAgg.AddRecord(*record)
-					if recordsWriter != nil {
-						recordsWriter.AppendRecord("upgrade_panacea", *record)
-					}
-			}
-		}
+		// Dispatch by log type
+		p.processLogType(parsed, lastSourceByCharacter, diamondAgg, caveAgg, challengeAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount, &lastLogTime)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -228,274 +143,97 @@ func (p *LogProcessor) Process(
 	return lastLogTime
 }
 
-// findStartPosition 二分查找定位第一个时间戳 > lastLogTime 的字节位置
-func findStartPosition(file *os.File, lastLogTime string) (int64, error) {
-	if lastLogTime == "" {
-		return 0, nil
-	}
+// checkLanguageSwitch checks if language should be switched based on accumulated scores.
+func (p *LogProcessor) checkLanguageSwitch(scoreAccumulator *i18n.ScoreAccumulator, switchThreshold int, switchCount *int) {
+	scores := scoreAccumulator.GetScores()
+	currentLang := p.i18nMgr.CurrentLanguage()
 
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return 0, err
-	}
-	fileSize := fileInfo.Size()
-	if fileSize == 0 {
-		return 0, nil
-	}
-
-	// 快速边界检查：读取文件末尾的时间戳
-	// 找到最后一个完整行的起始位置
-	lastLineStart := findLastLineStart(file, fileSize)
-	lastTimeInFile, err := readTimestampAt(file, lastLineStart)
-
-	// 文件最后时间 <= checkpoint 表示全部已处理
-	if err == nil && lastTimeInFile <= lastLogTime {
-		return -1, nil
-	}
-
-	// 查找文件开头第一条有效时间戳
-	// 注意：文件开头可能是非游戏日志（如系统日志），需要跳过
-	firstTimeInFile, firstValidPos := findFirstValidTimestamp(file, fileSize)
-	if firstTimeInFile != "" && firstTimeInFile > lastLogTime {
-		// 文件第一条有效记录时间 > checkpoint，从头开始处理
-		return 0, nil
-	}
-	if firstValidPos > 0 {
-		// 文件开头有无效行，记录位置供后续参考
-	}
-
-	// 二分查找：找第一个 > checkpoint 的记录
-	left, right := int64(0), fileSize
-	var result int64 = fileSize
-
-	for left < right {
-		mid := (left + right) / 2
-		lineStart := findLineStart(file, mid)
-
-		if lineStart <= left && mid > left {
-			left = mid + 1
-			continue
-		}
-
-		timestamp, err := readTimestampAt(file, lineStart)
-		if err != nil {
-			left = mid + 1
-			continue
-		}
-
-		if timestamp > lastLogTime {
-			result = lineStart
-			right = mid
-		} else {
-			left = mid + 1
+	var maxLang i18n.Language
+	maxScore := 0
+	for lang, score := range scores {
+		if score > maxScore {
+			maxScore = score
+			maxLang = lang
 		}
 	}
 
-	return result, nil
+	if maxLang != "" && maxLang != currentLang {
+		currentScore := scores[currentLang]
+		if maxScore-currentScore >= switchThreshold {
+			p.i18nMgr.SetLanguage(maxLang)
+			*switchCount++
+			log.Printf("语言切换: %s -> %s (得分: %d vs %d)", currentLang, maxLang, maxScore, currentScore)
+		}
+	}
 }
 
-// findLineStart 向前查找最近的换行符，返回下一行的起始位置
-func findLineStart(file *os.File, pos int64) int64 {
-	if pos <= 0 {
-		return 0
-	}
+// processLogType processes a single log line based on its type.
+func (p *LogProcessor) processLogType(
+	parsed parser.ParsedLog,
+	lastSourceByCharacter map[string]string,
+	diamondAgg *aggregator.ChangeAggregator,
+	caveAgg *aggregator.CaveAggregator,
+	challengeAgg *aggregator.ChallengeAggregator,
+	runeTicketAgg *aggregator.ChangeAggregator,
+	upgradePanaceaAgg *aggregator.ChangeAggregator,
+	recordsWriter *storage.RecordsWriter,
+	newRecordCount *int,
+	lastLogTime *string,
+) {
+	logType := parser.IdentifyLogType(parsed.Body)
 
-	const bufSize = 4096
-	start := pos - bufSize
-	if start < 0 {
-		start = 0
-	}
-
-	_, err := file.Seek(start, 0)
-	if err != nil {
-		return 0
-	}
-
-	buf := make([]byte, int(pos-start))
-	n, _ := file.Read(buf)
-
-	for i := n - 1; i >= 0; i-- {
-		if buf[i] == '\n' {
-			return start + int64(i) + 1
+	switch logType {
+	case parser.LogTypeDiamond:
+		source := lastSourceByCharacter[parsed.Character]
+		if source == "" {
+			source = "none"
 		}
-	}
-
-	if start > 0 {
-		return findLineStart(file, start)
-	}
-	return 0
-}
-
-// findLastLineStart 找到文件中最后一个完整行的起始位置
-func findLastLineStart(file *os.File, fileSize int64) int64 {
-	if fileSize <= 1 {
-		return 0
-	}
-
-	// 从文件末尾向前查找，跳过可能的末尾换行符
-	buf := make([]byte, 1)
-	pos := fileSize - 1
-
-	// 跳过末尾的换行符
-	for pos >= 0 {
-		file.Seek(pos, 0)
-		file.Read(buf)
-		if buf[0] != '\n' && buf[0] != '\r' {
-			break
-		}
-		pos--
-	}
-
-	if pos < 0 {
-		return 0
-	}
-
-	// 从当前位置向前找上一个换行符
-	for pos >= 0 {
-		file.Seek(pos, 0)
-		file.Read(buf)
-		if buf[0] == '\n' {
-			return pos + 1
-		}
-		pos--
-	}
-
-	return 0
-}
-
-// findFirstValidTimestamp 查找文件中第一条有效时间戳
-// 返回时间戳和对应的文件位置（跳过开头的非游戏日志）
-func findFirstValidTimestamp(file *os.File, fileSize int64) (string, int64) {
-	_, err := file.Seek(0, 0)
-	if err != nil {
-		return "", 0
-	}
-
-	reader := bufio.NewReader(file)
-	var offset int64 = 0
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			break
+		record := parser.ExtractChangeRecord(parsed, source, logType)
+		if record != nil {
+			diamondAgg.AddRecord(*record)
+			if recordsWriter != nil {
+				recordsWriter.AppendRecord("diamond", *record)
+			}
+			*newRecordCount++
+			*lastLogTime = record.Timestamp
 		}
 
-		line = strings.TrimSpace(line)
-		if line != "" {
-			// 尝试提取时间戳
-			timestamp, _ := extractTimestampFromLine(line)
-			if timestamp != "" {
-				return timestamp, offset
+	case parser.LogTypeCave:
+		caveRecord := parser.ExtractCaveRecord(parsed)
+		if caveRecord != nil {
+			caveAgg.AddRecord(*caveRecord)
+		}
+
+	case parser.LogTypeChallenge:
+		challengeRecord := parser.ExtractChallengeRecord(parsed)
+		if challengeRecord != nil {
+			challengeAgg.AddRecord(*challengeRecord)
+		}
+
+	case parser.LogTypeRuneTicket:
+		source := lastSourceByCharacter[parsed.Character]
+		if source == "" {
+			source = "none"
+		}
+		record := parser.ExtractChangeRecord(parsed, source, logType)
+		if record != nil {
+			runeTicketAgg.AddRecord(*record)
+			if recordsWriter != nil {
+				recordsWriter.AppendRecord("rune_ticket", *record)
 			}
 		}
 
-		offset += int64(len(line) + 1) // +1 for newline
-		if err == io.EOF {
-			break
+	case parser.LogTypeUpgradePanacea:
+		source := lastSourceByCharacter[parsed.Character]
+		if source == "" {
+			source = "none"
+		}
+		record := parser.ExtractChangeRecord(parsed, source, logType)
+		if record != nil {
+			upgradePanaceaAgg.AddRecord(*record)
+			if recordsWriter != nil {
+				recordsWriter.AppendRecord("upgrade_panacea", *record)
+			}
 		}
 	}
-
-	return "", 0
-}
-
-// extractTimestampFromLine 从单行提取时间戳
-func extractTimestampFromLine(line string) (string, error) {
-	// 尝试解析 JSON 格式（Docker 日志）
-	var logEntry struct {
-		Log string `json:"log"`
-	}
-	if err := json.Unmarshal([]byte(line), &logEntry); err == nil && logEntry.Log != "" {
-		timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
-		matches := timeRegex.FindStringSubmatch(logEntry.Log)
-		if len(matches) >= 2 {
-			return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
-		}
-		return "", fmt.Errorf("无法从 JSON 日志内容提取时间戳")
-	}
-
-	// 尝试解析纯文本格式：[YYYY-MM-DD HH:MM:SS]
-	timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
-	matches := timeRegex.FindStringSubmatch(line)
-	if len(matches) >= 2 {
-		return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
-	}
-
-	return "", fmt.Errorf("无法提取时间戳")
-}
-
-// readTimestampAt 读取指定偏移处的日志时间戳
-// 支持 Docker JSON 格式和纯文本格式
-func readTimestampAt(file *os.File, offset int64) (string, error) {
-	_, err := file.Seek(offset, 0)
-	if err != nil {
-		return "", err
-	}
-
-	reader := bufio.NewReader(file)
-	line, err := reader.ReadString('\n')
-	if err != nil && err != io.EOF {
-		return "", err
-	}
-
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return "", fmt.Errorf("空行")
-	}
-
-	// 尝试解析 JSON 格式（Docker 日志）
-	var logEntry struct {
-		Log string `json:"log"`
-	}
-	if err := json.Unmarshal([]byte(line), &logEntry); err == nil && logEntry.Log != "" {
-		// 从日志内容中提取时间戳（与 parser 保持一致）
-		timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
-		matches := timeRegex.FindStringSubmatch(logEntry.Log)
-		if len(matches) >= 2 {
-			return strings.Replace(matches[1], " ", "T", 1) + "+08:00", nil
-		}
-		return "", fmt.Errorf("无法从 JSON 日志内容提取时间戳")
-	}
-
-	// 尝试解析纯文本格式：[YYYY-MM-DD HH:MM:SS]
-	timeRegex := regexp.MustCompile(`^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]`)
-	matches := timeRegex.FindStringSubmatch(line)
-	if len(matches) >= 2 {
-		// 转换为 ISO 格式（东8区）
-		localTime := matches[1]
-		return strings.Replace(localTime, " ", "T", 1) + "+08:00", nil
-	}
-
-	return "", fmt.Errorf("无法提取时间戳")
-}
-
-// SaveCaveStats 保存洞穴统计结果到文件
-func SaveCaveStats(stats map[string]map[string]*types.CaveDailyStats, filePath string) {
-	storage.SaveStats(convertCaveStats(stats), filePath)
-}
-
-// SaveChallengeStats 保存挑战统计结果到文件
-func SaveChallengeStats(stats map[string]*types.ChallengeStats, filePath string) {
-	storage.SaveStats(convertChallengeStats(stats), filePath)
-}
-
-func convertCaveStats(stats map[string]map[string]*types.CaveDailyStats) map[string]map[string]any {
-	result := make(map[string]map[string]any)
-	for k, v := range stats {
-		result[k] = make(map[string]any)
-		for k2, v2 := range v {
-			result[k][k2] = v2
-		}
-	}
-	return result
-}
-
-func convertChallengeStats(stats map[string]*types.ChallengeStats) map[string]map[string]any {
-	result := make(map[string]map[string]any)
-	for k, v := range stats {
-		result[k] = map[string]any{
-			"quest":  v.Quest,
-			"towers": v.Towers,
-		}
-	}
-	return result
 }
