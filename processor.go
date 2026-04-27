@@ -7,6 +7,7 @@ import (
 	"mmth-etl/i18n"
 	"mmth-etl/parser"
 	"mmth-etl/storage"
+	"mmth-etl/types"
 	"os"
 )
 
@@ -139,8 +140,14 @@ func (p *LogProcessor) Process(
 			p.processItemChange(parsed, logType, source, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount)
 
 		case parser.LogTypeCave:
-			// Cave logs can be source context
-			lastSourceByCharacter[parsed.Character] = parsed.Body
+			// Cave logs: enter/finish are source context, errors clear source
+			if types.CaveErrorRegex.MatchString(parsed.Body) || types.SystemErrorRegex.MatchString(parsed.Body) {
+				// Cave error logs clear source context
+				delete(lastSourceByCharacter, parsed.Character)
+			} else {
+				// Cave enter/finish logs are valid source context
+				lastSourceByCharacter[parsed.Character] = parsed.Body
+			}
 			caveRecord := parser.ExtractCaveRecord(parsed)
 			if caveRecord != nil {
 				caveAgg.AddRecord(*caveRecord)

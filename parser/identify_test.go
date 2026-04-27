@@ -29,7 +29,7 @@ func TestIdentifyLogType_English(t *testing.T) {
 		// Cave
 		{"Enter Cave of Space-Time", LogTypeCave, "EN Cave enter"},
 		{"Cave of Space-Time Finished", LogTypeCave, "EN Cave finish"},
-		{"KeyNotFoundException: something went wrong", LogTypeCave, "EN Cave error"},
+		{"System.Collections.Generic.KeyNotFoundException: The given key was not present", LogTypeCave, "EN Cave system error"},
 
 		// Challenge
 		{"Challenge 36-13 boss one time：You have triumphed.,  total：1, Success：1, Err: 0", LogTypeChallenge, "EN Quest challenge success"},
