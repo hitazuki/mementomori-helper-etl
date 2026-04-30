@@ -118,12 +118,18 @@ func (p *LogProcessor) Process(
 		}
 
 		// Dynamic language detection
+		lineLanguage := i18n.Language("")
 		if p.dynamicLang.Enabled {
-			scoreAccumulator.AddLine(parsed.Body)
+			lineLanguage = scoreAccumulator.AddLine(parsed.Body)
 
 			if lineCount%checkInterval == 0 {
 				p.checkLanguageSwitch(scoreAccumulator, switchThreshold, &languageSwitchCount)
 			}
+		}
+
+		stableLanguage := p.i18nMgr.CurrentLanguage()
+		if lineLanguage != "" && lineLanguage != stableLanguage {
+			p.i18nMgr.SetLanguage(lineLanguage)
 		}
 
 		// Step 1: Identify log type first
@@ -178,6 +184,10 @@ func (p *LogProcessor) Process(
 		case parser.LogTypeNone:
 			// Unknown type - still valid as source context
 			lastSourceByCharacter[parsed.Character] = parsed.Body
+		}
+
+		if lineLanguage != "" && lineLanguage != stableLanguage {
+			p.i18nMgr.SetLanguage(stableLanguage)
 		}
 	}
 

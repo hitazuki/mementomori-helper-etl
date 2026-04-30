@@ -8,25 +8,25 @@ import (
 // TestDynamicSwitchWithWindowSizes tests language switching with different window sizes.
 func TestDynamicSwitchWithWindowSizes(t *testing.T) {
 	tests := []struct {
-		name          string
-		windowSize    int
-		threshold     int
-		lines         []string // Mixed language lines
+		name             string
+		windowSize       int
+		threshold        int
+		lines            []string // Mixed language lines
 		expectedSwitches int
-		desc          string
+		desc             string
 	}{
 		{
 			name:       "逐行检测_快速切换",
 			windowSize: 1,
 			threshold:  1,
 			lines: []string{
-				"Name: Diamonds(None) x 100",     // EN
-				"名称: 鑽石(None) x 100",           // TW
-				"Name: Diamonds(None) x 101",     // EN
-				"名称: 鑽石(None) x 101",           // TW
+				"Name: Diamonds(None) x 100", // EN
+				"名称: 鑽石(None) x 100",         // TW
+				"Name: Diamonds(None) x 101", // EN
+				"名称: 鑽石(None) x 101",         // TW
 			},
 			expectedSwitches: 3, // EN->TW->EN->TW
-			desc:          "逐行检测应每行都切换",
+			desc:             "逐行检测应每行都切换",
 		},
 		{
 			name:       "小窗口_批量切换",
@@ -35,14 +35,14 @@ func TestDynamicSwitchWithWindowSizes(t *testing.T) {
 			lines: []string{
 				"Name: Diamonds(None) x 1",
 				"Name: Diamonds(None) x 2",
-				"名称: 鑽石(None) x 3",     // TW starts
+				"名称: 鑽石(None) x 3", // TW starts
 				"名称: 鑽石(None) x 4",
 				"名称: 鑽石(None) x 5",
-				"名称: 鑽石(None) x 6",     // TW dominant
+				"名称: 鑽石(None) x 6", // TW dominant
 				"名称: 鑽石(None) x 7",
 			},
 			expectedSwitches: 1, // EN->TW after window fills
-			desc:          "小窗口批量检测",
+			desc:             "小窗口批量检测",
 		},
 		{
 			name:       "大窗口_稳定检测",
@@ -60,12 +60,12 @@ func TestDynamicSwitchWithWindowSizes(t *testing.T) {
 				return lines
 			}(),
 			expectedSwitches: 1, // EN->TW
-			desc:          "大窗口稳定检测，减少抖动",
+			desc:             "大窗口稳定检测，减少抖动",
 		},
 		{
 			name:       "阈值过高_不切换",
 			windowSize: 5,
-			threshold:  10, // Higher than window size
+			threshold:  30, // Higher than weighted window score
 			lines: []string{
 				"名称: 鑽石(None) x 1",
 				"名称: 鑽石(None) x 2",
@@ -74,7 +74,7 @@ func TestDynamicSwitchWithWindowSizes(t *testing.T) {
 				"名称: 鑽石(None) x 5",
 			},
 			expectedSwitches: 0, // No switch because threshold too high
-			desc:          "阈值过高阻止切换",
+			desc:             "阈值过高阻止切换",
 		},
 	}
 
@@ -125,8 +125,8 @@ func TestDynamicSwitchWithWindowSizes(t *testing.T) {
 // TestAdaptiveThreshold tests that small windows use adaptive thresholds.
 func TestAdaptiveThreshold(t *testing.T) {
 	tests := []struct {
-		windowSize      int
-		userThreshold   int
+		windowSize        int
+		userThreshold     int
 		expectedEffective int
 	}{
 		{1, 5, 1},   // Window 1: threshold capped to 1
@@ -206,7 +206,7 @@ func TestRealWorldScenario(t *testing.T) {
 		{"窗口50_检测切换", 50, 5, true},
 		{"窗口10_可能抖动", 10, 3, true},
 		{"窗口1_逐行切换", 1, 1, true},
-		{"窗口100_阈值过高", 100, 50, false},
+		{"窗口100_阈值过高", 100, 120, false},
 	}
 
 	for _, tt := range tests {
