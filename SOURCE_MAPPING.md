@@ -112,6 +112,36 @@ Open 日志格式：`<prefix> <item_name> x <count>`
 - `Open Gold Sealed Chest x 5` → `Open Gold Sealed Chest`
 - `開啟 上級封印寶箱 x 5` → `開啟 上級封印寶箱`
 
+### Auto Refresh Diamonds 来源
+
+自动刷新祈愿之泉任务的 helper 日志来自 `ResourceStrings(.XX).resx`：
+
+| 语言 | 模板 |
+|------|------|
+| EN | `Current expected value: {0}. Today, {1}/{2} auto-refreshes completed. Refreshing now.` |
+| ZH | `当前期望值：{0}，今日已自动刷新 {1}/{2} 次，现在刷新。` |
+| JA | `現在の期待値：{0}。本日自動リフレッシュ {1}/{2} 回完了。リフレッシュ中。` |
+| KO | `현재 기대값: {0}. 오늘 {1}/{2}회 자동 새로고침 완료. 지금 새로고침합니다.` |
+
+**提取规则**：
+
+- 每条日志视为一次自动刷新，固定写入钻石变动 `amount = -20`
+- 来源写入 `Fountain of Prayers`
+- 来源 ID 使用游戏内置 `SourceIDFountainOfPrayers = 140`
+- 统计 JSON 中会与祈愿之泉获取量聚合到同一个 `id:140`：
+
+```json
+{
+  "sources": {
+    "id:140": {
+      "source_id": 140,
+      "gain": 26150,
+      "consume": 6120
+    }
+  }
+}
+```
+
 ---
 
 ## 代码实现

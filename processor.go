@@ -146,6 +146,9 @@ func (p *LogProcessor) Process(
 			}
 			p.processItemChange(parsed, logType, source, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount)
 
+		case parser.LogTypeAutoRefreshDiamond:
+			p.processItemChange(parsed, logType, parsed.Body, diamondAgg, runeTicketAgg, upgradePanaceaAgg, recordsWriter, &newRecordCount)
+
 		case parser.LogTypeCave:
 			// Cave logs: enter/finish are source context, errors clear source
 			if types.CaveErrorRegex.MatchString(parsed.Body) || types.SystemErrorRegex.MatchString(parsed.Body) {
@@ -291,7 +294,7 @@ func (p *LogProcessor) processItemChange(
 	}
 
 	switch logType {
-	case parser.LogTypeDiamond:
+	case parser.LogTypeDiamond, parser.LogTypeAutoRefreshDiamond:
 		diamondAgg.AddRecord(*record)
 		if recordsWriter != nil {
 			recordsWriter.AppendRecord("diamond", *record)

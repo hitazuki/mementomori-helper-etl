@@ -19,6 +19,8 @@ func TestIdentifyLogType_English(t *testing.T) {
 		// Diamond
 		{"Name: Diamonds(None) × 100", LogTypeDiamond, "EN Diamond gain"},
 		{"Name: Diamonds(None) × -50", LogTypeDiamond, "EN Diamond consume"},
+		{"Current expected value: 65. Today, 0/9 auto-refreshes completed. Refreshing now.", LogTypeAutoRefreshDiamond, "EN helper auto-refresh diamond consume"},
+		{"Current expected value: 65.5. Today, 1/9 auto-refreshes completed. Refreshing now.", LogTypeAutoRefreshDiamond, "EN helper auto-refresh decimal expected value"},
 
 		// RuneTicket
 		{"Name: Rune Ticket(SSR) × 10", LogTypeRuneTicket, "EN Rune Ticket"},
@@ -81,6 +83,7 @@ func TestIdentifyLogType_TraditionalChinese(t *testing.T) {
 		// Diamond
 		{"名称: 鑽石(None) × 100", LogTypeDiamond, "TW Diamond gain"},
 		{"名称: 鑽石(None) × -50", LogTypeDiamond, "TW Diamond consume"},
+		{"当前期望值：65.5，今日已自动刷新 1/9 次，现在刷新。", LogTypeAutoRefreshDiamond, "ZH helper auto-refresh diamond consume"},
 
 		// RuneTicket
 		{"名称: 符石兌換券(SSR) × 10", LogTypeRuneTicket, "TW Rune Ticket"},
@@ -128,6 +131,7 @@ func TestIdentifyLogType_Japanese(t *testing.T) {
 	}{
 		// Diamond
 		{"名前: ダイヤ(None) × 100", LogTypeDiamond, "JA Diamond gain"},
+		{"現在の期待値：65.5。本日自動リフレッシュ 1/9 回完了。リフレッシュ中。", LogTypeAutoRefreshDiamond, "JA helper auto-refresh diamond consume"},
 
 		// RuneTicket
 		{"名前: ルーンチケット(SSR) × 10", LogTypeRuneTicket, "JA Rune Ticket"},
@@ -174,6 +178,7 @@ func TestIdentifyLogType_Korean(t *testing.T) {
 	}{
 		// Diamond
 		{"이름: 다이아(None) × 100", LogTypeDiamond, "KO Diamond gain"},
+		{"현재 기대값: 65.5. 오늘 1/9회 자동 새로고침 완료. 지금 새로고침합니다.", LogTypeAutoRefreshDiamond, "KO helper auto-refresh diamond consume"},
 
 		// RuneTicket
 		{"이름: 룬 티켓(SSR) × 10", LogTypeRuneTicket, "KO Rune Ticket"},

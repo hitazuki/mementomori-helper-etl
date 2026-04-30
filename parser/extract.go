@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"mmth-etl/i18n"
 	"mmth-etl/types"
 	"regexp"
 	"strconv"
@@ -11,6 +12,14 @@ func ExtractChangeRecord(parsed ParsedLog, source string, logType LogType) *type
 	var regex *regexp.Regexp
 
 	switch logType {
+	case LogTypeAutoRefreshDiamond:
+		return &types.ChangeRecord{
+			Character: parsed.Character,
+			Timestamp: parsed.Timestamp,
+			Amount:    -20,
+			Source:    "Fountain of Prayers",
+			SourceID:  int(i18n.SourceIDFountainOfPrayers),
+		}
 	case LogTypeDiamond:
 		regex = types.DiamondRegex()
 	case LogTypeRuneTicket:
@@ -33,11 +42,11 @@ func ExtractChangeRecord(parsed ParsedLog, source string, logType LogType) *type
 	}
 
 	return &types.ChangeRecord{
-		Character:   parsed.Character,
-		Timestamp:   parsed.Timestamp,
-		Amount:      amount,
-		Source:      cleanSource,
-		SourceID:    int(sourceID),
+		Character: parsed.Character,
+		Timestamp: parsed.Timestamp,
+		Amount:    amount,
+		Source:    cleanSource,
+		SourceID:  int(sourceID),
 	}
 }
 
@@ -58,28 +67,28 @@ func ExtractCaveRecord(parsed ParsedLog) *types.CaveRecord {
 
 	if types.CaveErrorRegex.MatchString(body) {
 		return &types.CaveRecord{
-			Character:   parsed.Character,
-			Timestamp:   parsed.Timestamp,
-			Status:      types.CaveStatusError,
-			Date:        date,
+			Character: parsed.Character,
+			Timestamp: parsed.Timestamp,
+			Status:    types.CaveStatusError,
+			Date:      date,
 		}
 	}
 
 	if types.CaveFinishRegex().MatchString(body) {
 		return &types.CaveRecord{
-			Character:   parsed.Character,
-			Timestamp:   parsed.Timestamp,
-			Status:      types.CaveStatusFinished,
-			Date:        date,
+			Character: parsed.Character,
+			Timestamp: parsed.Timestamp,
+			Status:    types.CaveStatusFinished,
+			Date:      date,
 		}
 	}
 
 	if types.CaveEnterRegex().MatchString(body) {
 		return &types.CaveRecord{
-			Character:   parsed.Character,
-			Timestamp:   parsed.Timestamp,
-			Status:      types.CaveStatusStarted,
-			Date:        date,
+			Character: parsed.Character,
+			Timestamp: parsed.Timestamp,
+			Status:    types.CaveStatusStarted,
+			Date:      date,
 		}
 	}
 
@@ -91,8 +100,8 @@ func ExtractChallengeRecord(parsed ParsedLog) *types.ChallengeRecord {
 	body := parsed.Body
 
 	record := &types.ChallengeRecord{
-		Character:   parsed.Character,
-		Timestamp:   parsed.Timestamp,
+		Character: parsed.Character,
+		Timestamp: parsed.Timestamp,
 	}
 
 	// Check failed first, then success

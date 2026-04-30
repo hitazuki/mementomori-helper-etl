@@ -48,6 +48,19 @@ helper 奖励任务日志来自 `ResourceStrings(.XX).resx` 的 `RewardMissionMs
 | 日文 | `Daily の 60 の報酬を受け取る` | `Weekly の 80 の報酬を受け取る` | `Guild の 2000 の報酬を受け取る` |
 | 韩文 | `일일의 60 보상을 수령합니다` | `주간의 80 보상을 수령합니다` | `Guild의 2000 보상을 수령합니다` |
 
+## ResourceStrings.Auto refresh diamonds 对照
+
+helper 自动刷新祈愿之泉任务时会输出 `ResourceStrings(.XX).resx` 中的自动刷新模板。每条匹配日志表示消耗 `20` 钻石，ETL 记录为 `amount: -20`，来源归属到游戏内置 `SourceIDFountainOfPrayers`（`140`），因此会和祈愿之泉钻石获取量在同一个来源下聚合。
+
+| 语言 | 模板/示例 | Source ID |
+|------|-----------|-----------|
+| 英文 | `Current expected value: {0}. Today, {1}/{2} auto-refreshes completed. Refreshing now.` | 140 |
+| 简中 | `当前期望值：{0}，今日已自动刷新 {1}/{2} 次，现在刷新。` | 140 |
+| 日文 | `現在の期待値：{0}。本日自動リフレッシュ {1}/{2} 回完了。リフレッシュ中。` | 140 |
+| 韩文 | `현재 기대값: {0}. 오늘 {1}/{2}회 자동 새로고침 완료. 지금 새로고침합니다.` | 140 |
+
+`{0}` 为当前期望值，可能是整数或小数；`{1}/{2}` 为当日自动刷新次数进度。
+
 ## 物品名称
 
 | 英文 (EN)       | 繁中 (TW)   | 简中 (CN)   | 日文 (JA)      | 韩文 (KO)      | 说明        |

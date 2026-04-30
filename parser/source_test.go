@@ -22,6 +22,7 @@ func TestGetSourceID_English(t *testing.T) {
 		{"Monthly Boost Already Claimed", i18n.SourceIDMonthlyBoost, "Monthly Boost"},
 		{"Login", i18n.SourceIDLoginBonus, "Login"},
 		{"Auto Buy Store Items", i18n.SourceIDAutoBuyStore, "Auto Buy Store Items"},
+		{"Current expected value: 65. Today, 0/9 auto-refreshes completed. Refreshing now.", i18n.SourceIDFountainOfPrayers, "Auto Refresh"},
 		{"You have no more challenges left.", i18n.SourceIDMissionsClaimed, "Missions Claim All"},
 		{"Cave of Space-TimeFinished", i18n.SourceIDMissionsClaimed, "Cave Finished"},
 		{"Tower of Infinity:", i18n.SourceIDTowerInfinity, "Tower of Infinity"},
@@ -62,6 +63,7 @@ func TestGetSourceID_TraditionalChinese(t *testing.T) {
 		{"每月強化組合包", i18n.SourceIDMonthlyBoost, "Monthly Boost TW"},
 		{"簽到獎勵:", i18n.SourceIDLoginBonus, "Login Bonus TW"},
 		{"自动购买商城物品", i18n.SourceIDAutoBuyStore, "Auto Buy TW"},
+		{"当前期望值：65.5，今日已自动刷新 1/9 次，现在刷新。", i18n.SourceIDFountainOfPrayers, "Auto Refresh ZH"},
 		{"剩餘挑戰次數不足", i18n.SourceIDMissionsClaimed, "Missions Claim All TW"},
 		{"時空洞窟已完成", i18n.SourceIDMissionsClaimed, "Cave Finished TW"},
 		{"無窮之塔:", i18n.SourceIDTowerInfinity, "Tower of Infinity TW"},
@@ -100,6 +102,7 @@ func TestGetSourceID_Japanese(t *testing.T) {
 		{"プレゼントボックス", i18n.SourceIDPresentsBox, "Presents Box JA"},
 		{"ログイン", i18n.SourceIDLoginBonus, "Login Bonus JA"},
 		{"自動購入ストアアイテム", i18n.SourceIDAutoBuyStore, "Auto Buy JA"},
+		{"現在の期待値：65.5。本日自動リフレッシュ 1/9 回完了。リフレッシュ中。", i18n.SourceIDFountainOfPrayers, "Auto Refresh JA"},
 		{"残り挑戦回数がありません", i18n.SourceIDMissionsClaimed, "Missions Claimed JA"},
 		{"時空の洞窟完了", i18n.SourceIDMissionsClaimed, "Cave Finished JA"},
 		{"無窮の塔:", i18n.SourceIDTowerInfinity, "Tower of Infinity JA"},
@@ -141,6 +144,7 @@ func TestGetSourceID_Korean(t *testing.T) {
 		{"월드 내 플레이어가 최초로", i18n.SourceIDWorldClears, "World clears KO"},
 		{"로그인", i18n.SourceIDLoginBonus, "Login Bonus KO"},
 		{"자동으로 상점 아이템 구매", i18n.SourceIDAutoBuyStore, "Auto Buy KO"},
+		{"현재 기대값: 65.5. 오늘 1/9회 자동 새로고침 완료. 지금 새로고침합니다.", i18n.SourceIDFountainOfPrayers, "Auto Refresh KO"},
 		{"현재 작업의 다이아몬드 예상 값이 20 미만이므로", i18n.SourceIDMissionsClaimed, "Expected Value KO"},
 		{"시공의 동굴 완료", i18n.SourceIDMissionsClaimed, "Cave Finished KO"},
 		{"무한의 탑:", i18n.SourceIDTowerInfinity, "Tower of Infinity KO"},
@@ -251,6 +255,27 @@ func TestExtractChangeRecord_CompositeSourceUsesIDKey(t *testing.T) {
 	}
 	if record.SourceID != int(i18n.SourceIDDailyMissionReward) {
 		t.Errorf("record.SourceID = %d, want %d", record.SourceID, i18n.SourceIDDailyMissionReward)
+	}
+}
+
+func TestExtractChangeRecord_AutoRefreshDiamond(t *testing.T) {
+	record := ExtractChangeRecord(ParsedLog{
+		Character: "test",
+		Timestamp: "2026-04-30T12:00:00+08:00",
+		Body:      "Current expected value: 65.5. Today, 1/9 auto-refreshes completed. Refreshing now.",
+	}, "", LogTypeAutoRefreshDiamond)
+
+	if record == nil {
+		t.Fatal("ExtractChangeRecord returned nil")
+	}
+	if record.Amount != -20 {
+		t.Errorf("record.Amount = %d, want -20", record.Amount)
+	}
+	if record.Source != "Fountain of Prayers" {
+		t.Errorf("record.Source = %q, want %q", record.Source, "Fountain of Prayers")
+	}
+	if record.SourceID != int(i18n.SourceIDFountainOfPrayers) {
+		t.Errorf("record.SourceID = %d, want %d", record.SourceID, i18n.SourceIDFountainOfPrayers)
 	}
 }
 

@@ -84,5 +84,10 @@ func OpenPrefixRegex() *regexp.Regexp {
 	return GetI18nManager().CurrentPatterns().OpenPrefix
 }
 
+// AutoRefreshDiamondRegex matches helper auto-refresh logs that spend diamonds.
+// ResourceStrings key:
+// Current expected value: {0}. Today, {1}/{2} auto-refreshes completed. Refreshing now.
+var AutoRefreshDiamondRegex = regexp.MustCompile(`^(?:Current expected value: \d+(?:\.\d+)?\. Today, \d+/\d+ auto-refreshes completed\. Refreshing now\.|当前期望值：\d+(?:\.\d+)?，今日已自动刷新 \d+/\d+ 次，现在刷新。|現在の期待値：\d+(?:\.\d+)?。本日自動リフレッシュ \d+/\d+ 回完了。リフレッシュ中。|현재 기대값: \d+(?:\.\d+)?\. 오늘 \d+/\d+회 자동 새로고침 완료\. 지금 새로고침합니다\.)$`)
+
 // SystemErrorRegex matches system/error logs that should clear source context.
 var SystemErrorRegex = regexp.MustCompile(`^(OnError|System\.)`)
