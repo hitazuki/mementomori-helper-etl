@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ParsedLog 表示解析后的日志结构
@@ -19,7 +20,7 @@ type ParsedLog struct {
 // 支持两种格式：
 //  1. Docker JSON 格式: {"log":"...", "time":"..."}
 //  2. 纯文本格式: [时间戳] [角色] 内容
-// 统一使用秒级精度时间戳（ISO格式，东8区）
+// 统一使用秒级精度时间戳（ISO格式，本地时区）
 func ParseLogLine(line string) ParsedLog {
 	result := ParsedLog{RawLine: line}
 
@@ -38,7 +39,13 @@ func ParseLogLine(line string) ParsedLog {
 		return result
 	}
 
-	result.Timestamp = strings.Replace(timestamp, " ", "T", 1) + "+08:00"
+	// 解析时间戳并使用本地时区
+	if t, err := time.ParseInLocation("2006-01-02 15:04:05", timestamp, time.Local); err == nil {
+		result.Timestamp = t.Format("2006-01-02T15:04:05Z07:00")
+	} else {
+		// 解析失败时使用原始时间戳
+		result.Timestamp = strings.Replace(timestamp, " ", "T", 1)
+	}
 	result.Character = character
 	result.Body = body
 	result.IsValid = true
