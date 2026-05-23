@@ -45,28 +45,20 @@ func (a *CaveAggregator) AddRecord(record types.CaveRecord) {
 
 func (a *CaveAggregator) updateDailyStatus(character, date string) {
 	daily := a.caveStats[character][date]
-	hasStarted := false
-	hasFinished := false
-	hasError := false
+
+	// 根据当天最新一条记录的状态决定当日状态
+	var latestTimestamp string
+	var latestStatus types.CaveStatus
 
 	for _, r := range daily.Records {
-		switch r.Status {
-		case types.CaveStatusError:
-			hasError = true
-		case types.CaveStatusFinished:
-			hasFinished = true
-		case types.CaveStatusStarted:
-			hasStarted = true
+		if r.Timestamp > latestTimestamp {
+			latestTimestamp = r.Timestamp
+			latestStatus = r.Status
 		}
 	}
 
-	// 状态优先级：异常 > 已完成 > 未完成
-	if hasError {
-		daily.Status = types.CaveStatusError
-	} else if hasFinished {
-		daily.Status = types.CaveStatusFinished
-	} else if hasStarted {
-		daily.Status = types.CaveStatusStarted
+	if latestTimestamp != "" {
+		daily.Status = latestStatus
 	}
 }
 
