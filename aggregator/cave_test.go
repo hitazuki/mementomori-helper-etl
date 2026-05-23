@@ -134,3 +134,16 @@ func TestCaveRecordCountAccumulates(t *testing.T) {
 		t.Fatalf("RecordCount() = %d, want 3", got)
 	}
 }
+
+// TestCaveStatusSameTimestampOrder
+// 场景：两个记录时间戳完全相同，先 started，后 finished。最终状态应当是 finished。
+func TestCaveStatusSameTimestampOrder(t *testing.T) {
+	agg := NewCaveAggregator()
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusStarted))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusFinished))
+
+	got := agg.caveStats["角色A"]["2026-05-23"].Status
+	if got != types.CaveStatusFinished {
+		t.Fatalf("status = %q, want %q (时间戳相同时，以添加顺序较后的 finished 为准)", got, types.CaveStatusFinished)
+	}
+}

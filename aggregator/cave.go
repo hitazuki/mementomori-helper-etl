@@ -51,7 +51,7 @@ func (a *CaveAggregator) updateDailyStatus(character, date string) {
 	var latestStatus types.CaveStatus
 
 	for _, r := range daily.Records {
-		if r.Timestamp > latestTimestamp {
+		if r.Timestamp >= latestTimestamp {
 			latestTimestamp = r.Timestamp
 			latestStatus = r.Status
 		}
