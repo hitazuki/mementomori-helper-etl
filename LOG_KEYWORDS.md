@@ -71,10 +71,20 @@ helper 自动刷新祈愿之泉任务时会输出 `ResourceStrings(.XX).resx` �
 
 ## 洞穴相关（已验证）
 
-| 英文 (EN) | 繁中 (TW) | 简中 (CN) | 日文 (JA) | 韩文 (KO) |
-| --------- | --------- | --------- | --------- | --------- |
-| Enter Cave of Space-Time | 进入 時空洞窟 | 进入 时空洞窟 | 時空の洞窟に入る | 시공의 동굴 입장 |
-| Cave of Space-Time Finished | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了 | 시공의 동굴 완료 |
+> **注意：** 洞窟完成的日志在实际输出中存在两种格式，二者用途不同。
+> 这条日志是由 helper 动态拼接生成的，其结构为：`[游戏内部文本: 时空洞窟]` + `[helper本地化文本: 已完成]`。
+> - 游戏内部文本对应的 ID 为：`[MissionTabName14]` 等。
+> - helper 本地化文本对应的 ID 为：`Finished`（来源于 helper 的 `ResourceStrings.resx`）。
+> 
+> 根据拼接时是否带空格，分为：
+> 1. **有空格版本**（如 `Cave of Space-Time Finished` / `時空洞窟 已完成` / `時空の洞窟 完了済み` / `시공의 동굴 완료됨`）：这是 helper 自身输出的通关提示，ETL 用于**判断当日洞窟是否已完成**（提取 `finished` 状态）。
+> 2. **无空格版本**（如 `Cave of Space-TimeFinished` / `時空洞窟已完成` / `時空の洞窟完了済み` / `시공의 동굴완료됨`）：这是 helper 执行“一键领取任务”时输出的标题，ETL 用于匹配来源 `SourceIDMissionsClaimed`。
+
+| 英文 (EN) | 繁中 (TW) | 简中 (CN) | 日文 (JA) | 韩文 (KO) | 作用 |
+| --------- | --------- | --------- | --------- | --------- | ---- |
+| Enter Cave of Space-Time | 进入 時空洞窟 | 进入 时空洞窟 | 時空の洞窟に入る | 시공의 동굴 입장 | 标记洞窟开始 (`started`) |
+| Cave of Space-Time Finished | 時空洞窟 已完成 | 时空洞窟 已完成 | 時空の洞窟 完了済み | 시공의 동굴 완료됨 | 标记洞窟完成 (`finished`) |
+| Cave of Space-TimeFinished | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了済み | 시공의 동굴완료됨 | 匹配一键领取来源 (`100004`) |
 
 ## 塔名称
 

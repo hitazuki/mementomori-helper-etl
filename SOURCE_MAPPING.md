@@ -71,7 +71,9 @@
 | 来源 | 英文 | 繁中 | 简中 | 日文 | 韩文 |
 | ------ | ------ | ------ | ------ | ------ | ------ |
 | 游戏 TextResource | You have no more challenges left. | 剩餘挑戰次數不足 | 剩余挑战次数不足 | 残り挑戦回数がありません | - |
-| 游戏 TextResource | Cave of Space-TimeFinished | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了 | 시공의 동굴 완료 |
+| 游戏 TextResource | Cave of Space-TimeFinished | 時空洞窟已完成 | 时空洞窟已完成 | 時空の洞窟完了済み | 시공의 동굴완료됨 |
+
+> **注意：** 此处的 `Cave of Space-TimeFinished`（无空格）是由 helper 动态拼接了游戏名词 (`[MissionTabName14]`) 和 helper 的本地化文本 (`Finished`) 生成的标题，专用于匹配一键领取任务来源 (`100004`)。而用于判断洞窟通关状态的提取日志带有空格（如 `Cave of Space-Time Finished`）。
 | helper ResourceStrings | Nothing to receive | 没有可以领取的 | | 受け取れるものはありません | 수령 가능한 것이 없습니다 |
 | helper ResourceStrings | The expected diamond value of the current task is now below 20 | 当前任务的钻石数量期望值已低于20 | | 現在のタスクのダイヤの期待値が20未満になったため | 현재 작업의 다이아몬드 예상 값이 20 미만이므로 |
 

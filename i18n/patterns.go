@@ -62,7 +62,7 @@ var languageDefinitions = map[Language]patternDefinition{
 		RuneTicket:       "符石兌換券",
 		UpgradePanacea:   "強化秘藥",
 		CaveEnter:        "进入 時空洞窟",
-		CaveFinish:       "時空洞窟已完成",
+		CaveFinish:       "時空洞窟 已完成",
 		ChallengeKeyword: "挑战",
 		SuccessKeyword:   "勝利",
 		FailedKeyword:    "敗北",

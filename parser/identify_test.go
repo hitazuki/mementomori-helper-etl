@@ -93,7 +93,7 @@ func TestIdentifyLogType_TraditionalChinese(t *testing.T) {
 
 		// Cave
 		{"进入 時空洞窟", LogTypeCave, "TW Cave enter"},
-		{"時空洞窟已完成", LogTypeCave, "TW Cave finish"},
+		{"時空洞窟 已完成", LogTypeCave, "TW Cave finish"},
 
 		// Challenge
 		{"挑战 36-13 boss 一次：勝利,  总次数：1, 胜利次数: 1, Err: 0", LogTypeChallenge, "TW Quest challenge success"},
