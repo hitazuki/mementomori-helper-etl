@@ -65,7 +65,7 @@ func ExtractCaveRecord(parsed ParsedLog) *types.CaveRecord {
 	body := parsed.Body
 	date := parsed.Timestamp[:10]
 
-	if types.CaveErrorRegex.MatchString(body) {
+	if types.CaveErrorRegex.MatchString(body) || types.CaveErrorAllDeadRegex.MatchString(body) {
 		return &types.CaveRecord{
 			Character: parsed.Character,
 			Timestamp: parsed.Timestamp,

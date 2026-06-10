@@ -30,7 +30,7 @@ func TestIdentifyLogType_English(t *testing.T) {
 
 		// Cave
 		{"Enter Cave of Space-Time", LogTypeCave, "EN Cave enter"},
-		{"Cave of Space-Time Finished", LogTypeCave, "EN Cave finish"},
+		{"Cave of Space-TimeFinished", LogTypeCave, "EN Cave finish"},
 		{"System.Collections.Generic.KeyNotFoundException: The given key was not present", LogTypeCave, "EN Cave system error"},
 
 		// Challenge
@@ -93,7 +93,7 @@ func TestIdentifyLogType_TraditionalChinese(t *testing.T) {
 
 		// Cave
 		{"进入 時空洞窟", LogTypeCave, "TW Cave enter"},
-		{"時空洞窟 已完成", LogTypeCave, "TW Cave finish"},
+		{"時空洞窟已完成", LogTypeCave, "TW Cave finish"},
 
 		// Challenge
 		{"挑战 36-13 boss 一次：勝利,  总次数：1, 胜利次数: 1, Err: 0", LogTypeChallenge, "TW Quest challenge success"},
@@ -141,7 +141,7 @@ func TestIdentifyLogType_Japanese(t *testing.T) {
 
 		// Cave
 		{"入る 時空の洞窟", LogTypeCave, "JA Cave enter"},
-		{"時空の洞窟 完了済み", LogTypeCave, "JA Cave finish"},
+		{"時空の洞窟完了済み", LogTypeCave, "JA Cave finish"},
 
 		// Challenge
 		{"36-13 ボスに挑戦 1 回：勝利しました、合計回数：1、勝利回数：1、エラー：0", LogTypeChallenge, "JA Quest challenge success"},
@@ -188,7 +188,7 @@ func TestIdentifyLogType_Korean(t *testing.T) {
 
 		// Cave
 		{"입장 시공의 동굴", LogTypeCave, "KO Cave enter"},
-		{"시공의 동굴 완료됨", LogTypeCave, "KO Cave finish"},
+		{"시공의 동굴완료됨", LogTypeCave, "KO Cave finish"},
 
 		// Challenge
 		{"36-13 보스에 도전 1회: 승리, 총 시도 횟수: 1, 승리 횟수: 1, 오류: 0", LogTypeChallenge, "KO Quest challenge success"},

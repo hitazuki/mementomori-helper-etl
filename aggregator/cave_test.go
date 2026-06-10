@@ -22,8 +22,6 @@ func TestCaveStatusSingleRecord(t *testing.T) {
 		status types.CaveStatus
 	}{
 		{"仅 started", types.CaveStatusStarted},
-		{"仅 finished", types.CaveStatusFinished},
-		{"仅 error", types.CaveStatusError},
 	}
 
 	for _, tc := range cases {
@@ -43,7 +41,9 @@ func TestCaveStatusSingleRecord(t *testing.T) {
 // 场景：早上 error，晚上 finished → 最终应为 finished
 func TestCaveStatusLatestFinishedWinsOverEarlierError(t *testing.T) {
 	agg := NewCaveAggregator()
-	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusError))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusStarted))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusError))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T19:00:00+08:00", types.CaveStatusStarted)) // Needs to restart to finish
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T20:00:00+08:00", types.CaveStatusFinished))
 
 	got := agg.caveStats["角色A"]["2026-05-23"].Status
@@ -54,9 +54,26 @@ func TestCaveStatusLatestFinishedWinsOverEarlierError(t *testing.T) {
 
 // TestCaveStatusLatestErrorWinsOverEarlierFinished
 // 场景：早上 finished，晚上 error → 最终应为 error
-func TestCaveStatusLatestErrorWinsOverEarlierFinished(t *testing.T) {
+func TestCaveStatusErrorWinsOverSubsequentFinished(t *testing.T) {
 	agg := NewCaveAggregator()
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T07:00:00+08:00", types.CaveStatusStarted))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusError))
+	// Error 之后跟随的 Finished 应该被忽略
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T09:00:00+08:00", types.CaveStatusFinished))
+
+	got := agg.caveStats["角色A"]["2026-05-23"].Status
+	if got != types.CaveStatusError {
+		t.Fatalf("status = %q, want %q", got, types.CaveStatusError)
+	}
+}
+
+// TestCaveStatusStartedFinishedStartedError
+// 场景：Started -> Finished -> 再次 Started -> 最终报错 Error
+func TestCaveStatusStartedFinishedStartedError(t *testing.T) {
+	agg := NewCaveAggregator()
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T07:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusFinished))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T19:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T20:00:00+08:00", types.CaveStatusError))
 
 	got := agg.caveStats["角色A"]["2026-05-23"].Status
@@ -85,6 +102,7 @@ func TestCaveStatusMultipleRecordsTimestampOrder(t *testing.T) {
 	// 故意乱序添加
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T15:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusError))
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T21:00:00+08:00", types.CaveStatusStarted)) // added for finished to work
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T22:00:00+08:00", types.CaveStatusFinished))
 
 	got := agg.caveStats["角色A"]["2026-05-23"].Status
@@ -99,8 +117,10 @@ func TestCaveStatusIsolatedByCharacterAndDate(t *testing.T) {
 	agg := NewCaveAggregator()
 
 	// 角色A 05-22：error
+	agg.AddRecord(makeRecord("角色A", "2026-05-22", "2026-05-22T09:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-22", "2026-05-22T10:00:00+08:00", types.CaveStatusError))
 	// 角色A 05-23：finished
+	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T09:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusFinished))
 	// 角色B 05-23：started
 	agg.AddRecord(makeRecord("角色B", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusStarted))
@@ -128,10 +148,11 @@ func TestCaveRecordCountAccumulates(t *testing.T) {
 	agg := NewCaveAggregator()
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T08:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色A", "2026-05-23", "2026-05-23T20:00:00+08:00", types.CaveStatusFinished))
+	agg.AddRecord(makeRecord("角色B", "2026-05-23", "2026-05-23T09:00:00+08:00", types.CaveStatusStarted))
 	agg.AddRecord(makeRecord("角色B", "2026-05-23", "2026-05-23T10:00:00+08:00", types.CaveStatusError))
 
-	if got := agg.RecordCount(); got != 3 {
-		t.Fatalf("RecordCount() = %d, want 3", got)
+	if got := agg.RecordCount(); got != 4 {
+		t.Fatalf("RecordCount() = %d, want 4", got)
 	}
 }
 

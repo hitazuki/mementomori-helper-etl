@@ -52,7 +52,7 @@ func IdentifyLogType(body string) LogType {
 		return LogTypeAutoRefreshDiamond
 	}
 
-	if types.CaveEnterRegex().MatchString(body) || types.CaveFinishRegex().MatchString(body) || types.CaveErrorRegex.MatchString(body) {
+	if types.CaveEnterRegex().MatchString(body) || types.CaveFinishRegex().MatchString(body) || types.CaveErrorRegex.MatchString(body) || types.CaveErrorAllDeadRegex.MatchString(body) {
 		return LogTypeCave
 	}
 

@@ -54,6 +54,9 @@ func CaveFinishRegex() *regexp.Regexp {
 // CaveErrorRegex matches error patterns in cave logs (language-independent).
 var CaveErrorRegex = regexp.MustCompile(`KeyNotFoundException`)
 
+// CaveErrorAllDeadRegex matches all character died error.
+var CaveErrorAllDeadRegex = regexp.MustCompile(`All character died`)
+
 // ChallengeQuestRegex returns the quest challenge pattern for the current language.
 func ChallengeQuestRegex() *regexp.Regexp {
 	return GetI18nManager().CurrentPatterns().ChallengeQuest

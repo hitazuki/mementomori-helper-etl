@@ -29,15 +29,21 @@ func (a *CaveAggregator) AddRecord(record types.CaveRecord) {
 		a.caveStats[character] = make(map[string]*types.CaveDailyStats)
 	}
 
-	if a.caveStats[character][date] == nil {
-		a.caveStats[character][date] = &types.CaveDailyStats{
+	daily := a.caveStats[character][date]
+	if daily == nil {
+		daily = &types.CaveDailyStats{
 			Date:    date,
 			Records: []types.CaveRecord{},
 		}
+		a.caveStats[character][date] = daily
 	}
 
-	a.caveStats[character][date].Records = append(
-		a.caveStats[character][date].Records, record)
+	// 统一逻辑：如果新状态是 Finished 或 Error，当前状态必须是 Started 才能生效，否则忽略
+	if record.Status != types.CaveStatusStarted && daily.Status != types.CaveStatusStarted {
+		return
+	}
+
+	daily.Records = append(daily.Records, record)
 
 	a.updateDailyStatus(character, date)
 	a.recordCount++
